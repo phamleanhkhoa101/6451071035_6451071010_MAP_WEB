@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -50,11 +50,6 @@ class _AttributesPageState extends State<AttributesPage> {
             fontWeight: FontWeight.w800,
             color: Color(0xFF1B2430),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Quản lý thuộc tính sản phẩm theo mục 5 của tài liệu.',
-          style: TextStyle(color: Color(0xFF64748B)),
         ),
         const SizedBox(height: 20),
         Wrap(
@@ -308,3 +303,5 @@ class _AttributesPageState extends State<AttributesPage> {
     return '$day/$month/$year';
   }
 }
+
+

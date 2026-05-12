@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,11 +55,6 @@ class _BrandsPageState extends State<BrandsPage> {
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF1B2430),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Quản lý thương hiệu theo mục 6 của tài liệu.',
-                    style: TextStyle(color: Color(0xFF64748B)),
                   ),
                 ],
               ),
@@ -152,20 +147,25 @@ class _BrandsPageState extends State<BrandsPage> {
                                   DataCell(_StatusBadge(active: item.isActive)),
                                   DataCell(Text(_formatDate(item.updatedAt))),
                                   DataCell(
-                                    Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: () =>
-                                              _showDialog(context, brand: item),
-                                          child: const Text('Sửa'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              _confirmDelete(context, item),
-                                          child: const Text('Xóa'),
-                                        ),
-                                      ],
+                                    SizedBox(
+                                      width: 150,
+                                      child: Row(
+                                        children: [
+                                          OutlinedButton(
+                                            onPressed: () => _showDialog(
+                                              context,
+                                              brand: item,
+                                            ),
+                                            child: const Text('Sửa'),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TextButton(
+                                            onPressed: () =>
+                                                _confirmDelete(context, item),
+                                            child: const Text('Xóa'),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -481,3 +481,5 @@ class _Pager extends StatelessWidget {
     );
   }
 }
+
+

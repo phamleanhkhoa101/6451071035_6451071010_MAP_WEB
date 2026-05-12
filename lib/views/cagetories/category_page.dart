@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/category_controller.dart';
@@ -40,11 +40,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF1B2430),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Quản lý danh mục sản phẩm theo mục 4 của tài liệu.',
-                    style: TextStyle(color: Color(0xFF64748B)),
                   ),
                 ],
               ),
@@ -424,3 +419,5 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 }
+
+

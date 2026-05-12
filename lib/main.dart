@@ -8,6 +8,11 @@ import 'controllers/auth_controller.dart';
 import 'controllers/brand_controller.dart';
 import 'controllers/category_controller.dart';
 import 'controllers/coupon_controller.dart';
+import 'controllers/customer_controller.dart';
+import 'controllers/order_controller.dart';
+import 'controllers/product_controller.dart';
+import 'controllers/product_review_controller.dart';
+import 'data/services/seed_data_service.dart';
 import 'firebase_options.dart';
 import 'routes/app_routes.dart';
 
@@ -16,6 +21,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await SeedDataService.seedPhoneData();
 
   runApp(const MyApp());
 }
@@ -32,6 +38,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AttributeController()),
         ChangeNotifierProvider(create: (_) => BrandController()),
         ChangeNotifierProvider(create: (_) => CouponController()),
+        ChangeNotifierProvider(create: (_) => ProductController()),
+        ChangeNotifierProvider(create: (_) => OrderController()),
+        ChangeNotifierProvider(create: (_) => CustomerController()),
+        ChangeNotifierProvider(create: (_) => ProductReviewController()),
       ],
       child: const _AppView(),
     );
@@ -71,10 +81,10 @@ class _AppViewState extends State<_AppView> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'MAP Web Admin',
+      title: 'Phone Store Admin',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0F6CBD)),
         scaffoldBackgroundColor: const Color(0xFFF4F7FB),
         fontFamily: 'Segoe UI',
       ),

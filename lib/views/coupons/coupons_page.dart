@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -56,18 +56,13 @@ class _CouponsPageState extends State<CouponsPage> {
                       color: Color(0xFF1B2430),
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Quản lý mã giảm giá theo mục 7 của tài liệu.',
-                    style: TextStyle(color: Color(0xFF64748B)),
-                  ),
                 ],
               ),
             ),
             FilledButton.icon(
               onPressed: () => _showDialog(context),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Thêm mã'),
+              label: const Text('ThĂªm mĂ£'),
             ),
           ],
         ),
@@ -82,7 +77,7 @@ class _CouponsPageState extends State<CouponsPage> {
               child: TextField(
                 onChanged: controller.search,
                 decoration: InputDecoration(
-                  hintText: 'Tìm theo mã hoặc mô tả...',
+                  hintText: 'TĂ¬m theo mĂ£ hoáº·c mĂ´ táº£...',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: Colors.white,
@@ -93,8 +88,8 @@ class _CouponsPageState extends State<CouponsPage> {
                 ),
               ),
             ),
-            _InfoChip(label: 'Tổng số', value: '${controller.totalCount}'),
-            _InfoChip(label: 'Hiển thị', value: '${controller.filteredCount}'),
+            _InfoChip(label: 'Tá»•ng sá»‘', value: '${controller.totalCount}'),
+            _InfoChip(label: 'Hiá»ƒn thá»‹', value: '${controller.filteredCount}'),
           ],
         ),
         const SizedBox(height: 20),
@@ -114,7 +109,7 @@ class _CouponsPageState extends State<CouponsPage> {
               ],
             ),
             child: controller.filteredCount == 0
-                ? const Center(child: Text('Chưa có mã giảm giá nào để hiển thị.'))
+                ? const Center(child: Text('ChÆ°a cĂ³ mĂ£ giáº£m giĂ¡ nĂ o Ä‘á»ƒ hiá»ƒn thá»‹.'))
                 : Column(
                     children: [
                       Expanded(
@@ -127,13 +122,13 @@ class _CouponsPageState extends State<CouponsPage> {
                             horizontalMargin: 12,
                             columns: const [
                               DataColumn(label: Text('SEQ')),
-                              DataColumn(label: Text('Mã')),
-                              DataColumn(label: Text('Giảm')),
-                              DataColumn(label: Text('Đơn tối thiểu')),
-                              DataColumn(label: Text('Lượt dùng')),
-                              DataColumn(label: Text('Hạn dùng')),
-                              DataColumn(label: Text('Trạng thái')),
-                              DataColumn(label: Text('Thao tác')),
+                              DataColumn(label: Text('MĂ£')),
+                              DataColumn(label: Text('Giáº£m')),
+                              DataColumn(label: Text('ÄÆ¡n tá»‘i thiá»ƒu')),
+                              DataColumn(label: Text('LÆ°á»£t dĂ¹ng')),
+                              DataColumn(label: Text('Háº¡n dĂ¹ng')),
+                              DataColumn(label: Text('Tráº¡ng thĂ¡i')),
+                              DataColumn(label: Text('Thao tĂ¡c')),
                             ],
                             rows: List.generate(controller.paginatedData.length, (
                               index,
@@ -162,12 +157,12 @@ class _CouponsPageState extends State<CouponsPage> {
                                         OutlinedButton(
                                           onPressed: () =>
                                               _showDialog(context, coupon: item),
-                                          child: const Text('Sửa'),
+                                          child: const Text('Sá»­a'),
                                         ),
                                         TextButton(
                                           onPressed: () =>
                                               _confirmDelete(context, item),
-                                          child: const Text('Xóa'),
+                                          child: const Text('XĂ³a'),
                                         ),
                                       ],
                                     ),
@@ -199,16 +194,16 @@ class _CouponsPageState extends State<CouponsPage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa mã giảm giá'),
-        content: Text('Bạn có chắc muốn xóa "${coupon.code}" không?'),
+        title: const Text('XĂ³a mĂ£ giáº£m giĂ¡'),
+        content: Text('Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a "${coupon.code}" khĂ´ng?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
+            child: const Text('Há»§y'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Xóa'),
+            child: const Text('XĂ³a'),
           ),
         ],
       ),
@@ -250,7 +245,7 @@ class _CouponsPageState extends State<CouponsPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setState) => AlertDialog(
-          title: Text(coupon == null ? 'Thêm mã giảm giá' : 'Cập nhật mã giảm giá'),
+          title: Text(coupon == null ? 'ThĂªm mĂ£ giáº£m giĂ¡' : 'Cáº­p nháº­t mĂ£ giáº£m giĂ¡'),
           content: SizedBox(
             width: 480,
             child: SingleChildScrollView(
@@ -259,26 +254,26 @@ class _CouponsPageState extends State<CouponsPage> {
                 children: [
                   TextField(
                     controller: codeController,
-                    decoration: const InputDecoration(labelText: 'Mã giảm giá'),
+                    decoration: const InputDecoration(labelText: 'MĂ£ giáº£m giĂ¡'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: descriptionController,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Mô tả'),
+                    decoration: const InputDecoration(labelText: 'MĂ´ táº£'),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: discountType,
-                    decoration: const InputDecoration(labelText: 'Loại giảm'),
+                    decoration: const InputDecoration(labelText: 'Loáº¡i giáº£m'),
                     items: const [
                       DropdownMenuItem(
                         value: 'percent',
-                        child: Text('Phần trăm'),
+                        child: Text('Pháº§n trÄƒm'),
                       ),
                       DropdownMenuItem(
                         value: 'fixed',
-                        child: Text('Số tiền cố định'),
+                        child: Text('Sá»‘ tiá»n cá»‘ Ä‘á»‹nh'),
                       ),
                     ],
                     onChanged: (value) {
@@ -291,19 +286,19 @@ class _CouponsPageState extends State<CouponsPage> {
                   TextField(
                     controller: discountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Giá trị giảm'),
+                    decoration: const InputDecoration(labelText: 'GiĂ¡ trá»‹ giáº£m'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: minOrderController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Giá trị đơn tối thiểu'),
+                    decoration: const InputDecoration(labelText: 'GiĂ¡ trá»‹ Ä‘Æ¡n tá»‘i thiá»ƒu'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: maxDiscountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Giảm tối đa'),
+                    decoration: const InputDecoration(labelText: 'Giáº£m tá»‘i Ä‘a'),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -312,7 +307,7 @@ class _CouponsPageState extends State<CouponsPage> {
                         child: TextField(
                           controller: usageLimitController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Giới hạn dùng'),
+                          decoration: const InputDecoration(labelText: 'Giá»›i háº¡n dĂ¹ng'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -320,7 +315,7 @@ class _CouponsPageState extends State<CouponsPage> {
                         child: TextField(
                           controller: usedCountController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Đã dùng'),
+                          decoration: const InputDecoration(labelText: 'ÄĂ£ dĂ¹ng'),
                         ),
                       ),
                     ],
@@ -340,7 +335,7 @@ class _CouponsPageState extends State<CouponsPage> {
                             }
                           },
                           icon: const Icon(Icons.event_rounded),
-                          label: Text('Bắt đầu: ${_formatDate(startDate)}'),
+                          label: Text('Báº¯t Ä‘áº§u: ${_formatDate(startDate)}'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -356,7 +351,7 @@ class _CouponsPageState extends State<CouponsPage> {
                             }
                           },
                           icon: const Icon(Icons.event_available_rounded),
-                          label: Text('Kết thúc: ${_formatDate(endDate)}'),
+                          label: Text('Káº¿t thĂºc: ${_formatDate(endDate)}'),
                         ),
                       ),
                     ],
@@ -365,7 +360,7 @@ class _CouponsPageState extends State<CouponsPage> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     value: isActive,
-                    title: const Text('Kích hoạt'),
+                    title: const Text('KĂ­ch hoáº¡t'),
                     onChanged: (value) => setState(() => isActive = value),
                   ),
                 ],
@@ -375,7 +370,7 @@ class _CouponsPageState extends State<CouponsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Hủy'),
+              child: const Text('Há»§y'),
             ),
             FilledButton(
               onPressed: () async {
@@ -417,7 +412,7 @@ class _CouponsPageState extends State<CouponsPage> {
                 }
                 Navigator.of(dialogContext).pop();
               },
-              child: Text(coupon == null ? 'Thêm' : 'Lưu'),
+              child: Text(coupon == null ? 'ThĂªm' : 'LÆ°u'),
             ),
           ],
         ),
@@ -445,7 +440,7 @@ class _CouponsPageState extends State<CouponsPage> {
     if (value <= 0) {
       return '--';
     }
-    return '${_numberText(value)}đ';
+    return '${_numberText(value)}Ä‘';
   }
 
   String _numberText(double value) {
@@ -487,7 +482,7 @@ class _CouponCodeCell extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           Text(
-            coupon.description.isEmpty ? 'Chưa có mô tả' : coupon.description,
+            coupon.description.isEmpty ? 'ChÆ°a cĂ³ mĂ´ táº£' : coupon.description,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
@@ -571,7 +566,7 @@ class _Pager extends StatelessWidget {
           children: [
             OutlinedButton(
               onPressed: hasPreviousPage ? onPrevious : null,
-              child: const Text('Trước'),
+              child: const Text('TrÆ°á»›c'),
             ),
             const SizedBox(width: 8),
             FilledButton.tonal(
@@ -584,3 +579,4 @@ class _Pager extends StatelessWidget {
     );
   }
 }
+
