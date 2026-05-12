@@ -1,11 +1,11 @@
 {
-    "name": "map_web_6451071035_6451071010",
-    "short_name": "map_web_6451071035_6451071010",
+    "name": "Phone Store Admin",
+    "short_name": "Phone Admin",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Phone Store admin dashboard built with Flutter Web.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

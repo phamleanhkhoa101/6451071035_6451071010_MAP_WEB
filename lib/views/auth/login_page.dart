@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sai tài khoản hoặc mật khẩu. Dùng admin / 123@456.'),
+          content: Text('Wrong username or password. Use admin / 123@456.'),
         ),
       );
     }
@@ -119,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Hệ thống quản trị cho bài thực hành Flutter Web',
+                      'Admin system for your phone store web project',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.black54),
                     ),
@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Đăng nhập'),
+                            : const Text('Login'),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -186,7 +186,8 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Text(
-                        'Tài khoản mặc định: admin / 123@456',
+                        // 'Default account: admin / 123@456',
+                        '',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,

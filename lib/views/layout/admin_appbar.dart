@@ -31,7 +31,7 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: isCompact
           ? const Text(
-              'MAP Web Admin',
+              'Phone Store Admin',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF1B2430),
@@ -49,7 +49,7 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     child: const TextField(
                       decoration: InputDecoration(
-                        hintText: 'Tìm kiếm trong hệ thống...',
+                        hintText: 'Search phones, orders, customers...',
                         prefixIcon: Icon(Icons.search_rounded),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 10),
@@ -58,9 +58,15 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 const SizedBox(width: 20),
-                _action(Icons.language_rounded, 'Ngôn ngữ'),
-                _action(Icons.notifications_none_rounded, 'Thông báo'),
-                _action(Icons.settings_outlined, 'Cài đặt'),
+                const _Action(icon: Icons.language_rounded, tooltip: 'Language'),
+                const _Action(
+                  icon: Icons.notifications_none_rounded,
+                  tooltip: 'Notifications',
+                ),
+                const _Action(
+                  icon: Icons.settings_outlined,
+                  tooltip: 'Settings',
+                ),
               ],
             ),
       actions: [
@@ -77,22 +83,22 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
           itemBuilder: (context) => const [
             PopupMenuItem<String>(
               value: 'profile',
-              child: Text('Thông tin cá nhân'),
+              child: Text('Profile'),
             ),
             PopupMenuItem<String>(
               value: 'security',
-              child: Text('Bảo mật'),
+              child: Text('Security'),
             ),
             PopupMenuDivider(),
             PopupMenuItem<String>(
               value: 'logout',
-              child: Text('Đăng xuất'),
+              child: Text('Logout'),
             ),
           ],
-          child: Padding(
-            padding: const EdgeInsets.only(right: 20),
+          child: const Padding(
+            padding: EdgeInsets.only(right: 20),
             child: Row(
-              children: const [
+              children: [
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -106,7 +112,7 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ),
                     Text(
-                      'Quản trị viên',
+                      'Phone manager',
                       style: TextStyle(
                         fontSize: 11,
                         color: Color(0xFF1976D2),
@@ -136,7 +142,18 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _action(IconData icon, String tooltip) {
+  @override
+  Size get preferredSize => const Size.fromHeight(65);
+}
+
+class _Action extends StatelessWidget {
+  const _Action({required this.icon, required this.tooltip});
+
+  final IconData icon;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Tooltip(
@@ -148,7 +165,4 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(65);
 }

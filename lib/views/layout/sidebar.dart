@@ -17,7 +17,7 @@ class Sidebar extends StatelessWidget {
       color: const Color(0xFF131A2A),
       child: Column(
         children: [
-          Container(
+          Padding(
             padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -28,12 +28,15 @@ class Sidebar extends StatelessWidget {
                     color: const Color(0xFF1976D2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.bolt_rounded, color: Colors.white),
+                  child: const Icon(
+                    Icons.smartphone_rounded,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Flexible(
                   child: Text(
-                    'SHOE ADMIN',
+                    'PHONE STORE',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
@@ -54,21 +57,17 @@ class Sidebar extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
               children: [
-                _sectionTitle('MAIN MENU'),
-                _item(Icons.dashboard_outlined, 'Bảng điều khiển', '/dashboard'),
-                _item(Icons.category_outlined, 'Danh mục sản phẩm', '/categories'),
-                _item(
-                  Icons.tune_rounded,
-                  'Danh mục thuộc tính sản phẩm',
-                  '/attributes',
-                ),
-                _item(Icons.branding_watermark_outlined, 'Thương hiệu', '/brands'),
-                _item(Icons.card_giftcard_outlined, 'Mã giảm giá', '/coupons'),
-                _item(Icons.inventory_2_outlined, 'Sản phẩm', '/products'),
+                _sectionTitle('CATALOG'),
+                _item(Icons.dashboard_outlined, 'Dashboard', '/dashboard'),
+                _item(Icons.category_outlined, 'Categories', '/categories'),
+                _item(Icons.tune_rounded, 'Attributes', '/attributes'),
+                _item(Icons.branding_watermark_outlined, 'Brands', '/brands'),
+                _item(Icons.card_giftcard_outlined, 'Coupons', '/coupons'),
+                _item(Icons.inventory_2_outlined, 'Products', '/products'),
                 _sectionTitle('SALES'),
-                _item(Icons.shopping_cart_outlined, 'Đơn hàng', '/orders'),
-                _item(Icons.people_outline_rounded, 'Khách hàng', '/customers'),
-                _item(Icons.star_outline_rounded, 'Đánh giá', '/reviews'),
+                _item(Icons.shopping_cart_outlined, 'Orders', '/orders'),
+                _item(Icons.people_outline_rounded, 'Customers', '/customers'),
+                _item(Icons.star_outline_rounded, 'Reviews', '/reviews'),
               ],
             ),
           ),
