@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,300 +8,448 @@ import '../../data/models/attribute_model.dart';
 import '../../data/services/attribute_service.dart';
 import 'attribute_add_edit_page.dart';
 
-class AttributesPage extends StatefulWidget {
+class AttributesPage extends StatelessWidget {
   const AttributesPage({super.key});
 
   @override
-  State<AttributesPage> createState() => _AttributesPageState();
-}
-
-class _AttributesPageState extends State<AttributesPage> {
-  final AttributeService _service = AttributeService();
-  StreamSubscription<List<AttributeModel>>? _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = _service.getAll().listen((data) {
-      if (!mounted) {
-        return;
-      }
-      context.read<AttributeController>().setData(data);
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final controller = context.watch<AttributeController>();
+    final service = AttributeService();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Product Attributes',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1B2430),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            SizedBox(
-              width: 360,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'Tìm theo tên hoặc giá trị...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AttributeFormPage(),
-                ),
-              ),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Thêm thuộc tính'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: controller.filteredCount == 0
-                ? const Center(child: Text('Chưa có thuộc tính nào để hiển thị.'))
-                : Column(
+    return ChangeNotifierProvider(
+      create: (_) => AttributeController(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF3F4F9), // Nền xám xanh nhẹ hiện đại
+        body: Consumer<AttributeController>(
+          builder: (context, controller, _) {
+            return StreamBuilder(
+              stream: service.getAll(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  controller.setData(snapshot.data!);
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: DataTable(
-                            headingRowColor: WidgetStateProperty.all(
-                              const Color(0xFFF1F5F9),
+                      // --- HEADER ---
+                      const Text(
+                        "Product Attributes",
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1C24),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(15),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: TextField(
+                                onChanged: controller.search,
+                                decoration: InputDecoration(
+                                  hintText: "Search by name or value...",
+                                  prefixIcon: const Icon(
+                                    Icons.search_rounded,
+                                    color: Colors.indigo,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 15,
+                                  ),
+                                ),
+                              ),
                             ),
-                            columnSpacing: 24,
-                            columns: const [
-                              DataColumn(label: Text('SEQ')),
-                              DataColumn(label: Text('Tên')),
-                              DataColumn(label: Text('Giá trị')),
-                              DataColumn(label: Text('Search')),
-                              DataColumn(label: Text('Filter')),
-                              DataColumn(label: Text('Color')),
-                              DataColumn(label: Text('Status')),
-                              DataColumn(label: Text('Updated')),
-                              DataColumn(label: Text('Actions')),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AttributeFormPage(),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: Colors.white,
+                            ),
+                            label: const Text("NEW ATTRIBUTE"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigoAccent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 20,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+                      // --- TABLE CONTAINER ---
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
                             ],
-                            rows: List.generate(
-                              controller.paginatedData.length,
-                              (index) {
-                                final item = controller.paginatedData[index];
-                                final rowNumber =
-                                    (controller.currentPage * controller.rowsPerPage) +
-                                    index +
-                                    1;
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text('$rowNumber')),
-                                    DataCell(
-                                      Text(
-                                        item.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: SingleChildScrollView(
+                              child: DataTable(
+                                headingRowColor: MaterialStateProperty.all(
+                                  Colors.indigo.withOpacity(0.05),
+                                ),
+                                dataRowHeight: 75,
+                                horizontalMargin: 24,
+                                columns: const [
+                                  DataColumn(
+                                    label: Text(
+                                      "SEQ",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
                                       ),
                                     ),
-                                    DataCell(
-                                      SizedBox(
-                                        width: 220,
-                                        child: Wrap(
-                                          spacing: 6,
-                                          runSpacing: 6,
-                                          children: item.attributeValues
-                                              .map(
-                                                (value) => Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFFE8F1FE),
-                                                    borderRadius:
-                                                        BorderRadius.circular(999),
-                                                  ),
-                                                  child: Text(
-                                                    value,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "ATTRIBUTE",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "VALUES",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "STATUS",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "UPDATED",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "ACTIONS",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                rows: List.generate(controller.paginatedData.length, (
+                                  index,
+                                ) {
+                                  final item = controller.paginatedData[index];
+                                  return DataRow(
+                                    onSelectChanged:
+                                        (_) {}, // Tạo hiệu ứng hover nhẹ
+                                    cells: [
+                                      DataCell(
+                                        Text(
+                                          "#${index + 1 + (controller.currentPage * controller.rowsPerPage)}",
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          item.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children: item.attributeValues
+                                                .map(
+                                                  (v) => Container(
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                          right: 6,
+                                                        ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 4,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueGrey
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors.blueGrey
+                                                            .withOpacity(0.2),
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      v,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.blueGrey,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              )
-                                              .toList(),
+                                                )
+                                                .toList(),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    DataCell(_boolIcon(item.isSearchable)),
-                                    DataCell(_boolIcon(item.isFilterable)),
-                                    DataCell(_boolIcon(item.isColorAttribute)),
-                                    DataCell(
-                                      _statusBadge(item.isActive ? 'Active' : 'Inactive'),
-                                    ),
-                                    DataCell(Text(_formatDate(item.updatedAt))),
-                                    DataCell(
-                                      Wrap(
-                                        spacing: 8,
-                                        children: [
-                                          OutlinedButton(
-                                            onPressed: () => Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (_) => AttributeFormPage(
-                                                  attribute: item,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Text('Sửa'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () => _confirmDelete(context, item),
-                                            child: const Text('Xóa'),
-                                          ),
-                                        ],
+                                      DataCell(
+                                        _buildStatusBadge(item.isActive),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
+                                      DataCell(
+                                        Text(
+                                          item.updatedAt?.toString().substring(
+                                                0,
+                                                10,
+                                              ) ??
+                                              "-",
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Row(
+                                          children: [
+                                            _buildActionIcon(
+                                              Icons.edit_note_rounded,
+                                              Colors.blue,
+                                              () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        AttributeFormPage(
+                                                          attribute: item,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(width: 8),
+                                            _buildActionIcon(
+                                              Icons.delete_sweep_rounded,
+                                              Colors.redAccent,
+                                              () {
+                                                _showDeleteDialog(
+                                                  context,
+                                                  service,
+                                                  item.id,
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Trang ${controller.currentPage + 1}/${controller.totalPages}',
-                            style: const TextStyle(color: Color(0xFF64748B)),
-                          ),
-                          Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: controller.hasPreviousPage
-                                    ? controller.previousPage
-                                    : null,
-                                child: const Text('Trước'),
-                              ),
-                              const SizedBox(width: 8),
-                              FilledButton.tonal(
-                                onPressed: controller.hasNextPage
-                                    ? controller.nextPage
-                                    : null,
-                                child: const Text('Sau'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+
+                      const SizedBox(height: 24),
+
+                      // --- PAGINATION ---
+                      _buildPagination(controller),
                     ],
                   ),
-          ),
+                );
+              },
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    AttributeModel attribute,
-  ) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa thuộc tính'),
-        content: Text('Bạn có chắc muốn xóa "${attribute.name}" không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
+  // Giao diện Badge Trạng thái
+  Widget _buildStatusBadge(bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFE3F9E5) : const Color(0xFFFEEBEB),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isActive ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Xóa'),
+          const SizedBox(width: 8),
+          Text(
+            isActive ? "Active" : "Disabled",
+            style: TextStyle(
+              color: isActive ? Colors.green[800] : Colors.red[800],
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
     );
-
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
-
-    await context.read<AttributeController>().delete(attribute.id);
   }
 
-  Widget _boolIcon(bool value) {
-    return Icon(
-      value ? Icons.check_circle_rounded : Icons.remove_circle_outline_rounded,
-      color: value ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C),
-    );
-  }
-
-  Widget _statusBadge(String text) {
-    final isActive = text == 'Active';
-    final color = isActive ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: color, fontWeight: FontWeight.w700),
+  // Nút hành động (Edit/Delete) với hiệu ứng Hover
+  Widget _buildActionIcon(IconData icon, Color color, VoidCallback onPressed) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: color.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: color, size: 22),
+        ),
       ),
     );
   }
 
-  String _formatDate(DateTime? value) {
-    if (value == null) {
-      return '--';
-    }
+  // Thanh phân trang thiết kế lại
+  Widget _buildPagination(AttributeController controller) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(controller.totalPages, (index) {
+        bool isCurrent = controller.currentPage == index;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          child: InkWell(
+            onTap: () => controller.currentPage = index,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isCurrent ? Colors.indigoAccent : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isCurrent ? Colors.indigoAccent : Colors.grey[300]!,
+                ),
+                boxShadow: isCurrent
+                    ? [
+                        BoxShadow(
+                          color: Colors.indigoAccent.withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Text(
+                "${index + 1}",
+                style: TextStyle(
+                  color: isCurrent ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
 
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final year = value.year.toString();
-    return '$day/$month/$year';
+  void _showDeleteDialog(
+    BuildContext context,
+    AttributeService service,
+    String id,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 10),
+            Text("Confirm Delete"),
+          ],
+        ),
+        content: const Text(
+          "This attribute will be permanently removed. Continue?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              await service.delete(id);
+              Navigator.pop(context);
+            },
+            child: const Text("DELETE", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 }
-
-

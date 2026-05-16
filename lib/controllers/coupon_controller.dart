@@ -4,96 +4,69 @@ import '../data/models/coupon_model.dart';
 import '../data/services/coupon_service.dart';
 
 class CouponController extends ChangeNotifier {
-  CouponController({CouponService? service})
-    : _service = service ?? CouponService();
+  final CouponService _service = CouponService();
 
-  final CouponService _service;
+  List<CouponModel> coupons = [];
+  List<CouponModel> filtered = [];
 
-  List<CouponModel> _allData = [];
-  List<CouponModel> _filteredData = [];
-  String _searchText = '';
+  bool isLoading = false;
 
-  int currentPage = 0;
+  int currentPage = 1;
   int rowsPerPage = 5;
 
-  int get totalCount => _allData.length;
-  int get filteredCount => _filteredData.length;
-  int get totalPages =>
-      _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
-  bool get hasPreviousPage => currentPage > 0;
-  bool get hasNextPage => currentPage < totalPages - 1;
+  Future<void> fetchCoupons() async {
+    isLoading = true;
+    notifyListeners();
 
-  List<CouponModel> get paginatedData {
-    if (_filteredData.isEmpty) {
-      return [];
+    coupons = await _service.getCoupons();
+    filtered = coupons;
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  void search(String keyword) {
+    currentPage = 1;
+
+    if (keyword.isEmpty) {
+      filtered = coupons;
+    } else {
+      filtered = coupons
+          .where((c) => c.code.toLowerCase().contains(keyword.toLowerCase()))
+          .toList();
     }
 
-    final start = currentPage * rowsPerPage;
+    notifyListeners();
+  }
+
+  List<CouponModel> get paginatedData {
+    final start = (currentPage - 1) * rowsPerPage;
     final end = start + rowsPerPage;
-    return _filteredData.sublist(
+    return filtered.sublist(
       start,
-      end > _filteredData.length ? _filteredData.length : end,
+      end > filtered.length ? filtered.length : end,
     );
   }
 
-  void setData(List<CouponModel> data) {
-    _allData = data;
-    _applyFilter(notify: true);
-  }
+  int get totalPages => (filtered.length / rowsPerPage).ceil();
 
-  void search(String value) {
-    _searchText = value.trim().toLowerCase();
-    currentPage = 0;
-    _applyFilter(notify: true);
-  }
-
-  void previousPage() {
-    if (!hasPreviousPage) {
-      return;
-    }
-    currentPage--;
+  void changePage(int page) {
+    currentPage = page;
     notifyListeners();
   }
 
-  void nextPage() {
-    if (!hasNextPage) {
-      return;
-    }
-    currentPage++;
-    notifyListeners();
+  Future<void> add(CouponModel coupon) async {
+    await _service.addCoupon(coupon);
+    await fetchCoupons();
   }
 
-  Future<void> create(CouponModel model) async {
-    await _service.create(model);
-  }
-
-  Future<void> update(CouponModel model) async {
-    await _service.update(model);
+  Future<void> update(CouponModel coupon) async {
+    await _service.updateCoupon(coupon);
+    await fetchCoupons();
   }
 
   Future<void> delete(String id) async {
-    await _service.delete(id);
-  }
-
-  void _applyFilter({required bool notify}) {
-    if (_searchText.isEmpty) {
-      _filteredData = List<CouponModel>.from(_allData);
-    } else {
-      _filteredData = _allData.where((item) {
-        return item.code.toLowerCase().contains(_searchText) ||
-            item.description.toLowerCase().contains(_searchText);
-      }).toList();
-    }
-
-    if (currentPage >= totalPages) {
-      currentPage = totalPages - 1;
-    }
-    if (currentPage < 0) {
-      currentPage = 0;
-    }
-
-    if (notify) {
-      notifyListeners();
-    }
+    await _service.deleteCoupon(id);
+    await fetchCoupons();
   }
 }

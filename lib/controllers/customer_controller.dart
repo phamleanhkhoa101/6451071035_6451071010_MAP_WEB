@@ -4,34 +4,28 @@ import '../data/models/customer_model.dart';
 import '../data/services/customer_service.dart';
 
 class CustomerController extends ChangeNotifier {
-  CustomerController({CustomerService? service})
-    : _service = service ?? CustomerService();
-
-  final CustomerService _service;
+  final CustomerService _service = CustomerService();
 
   List<CustomerModel> _allData = [];
   List<CustomerModel> _filteredData = [];
   String _searchText = '';
 
-  int currentPage = 0;
-  int rowsPerPage = 5;
+  bool isLoading = false;
 
-  int get totalCount => _allData.length;
-  int get vipCount => _allData.where((item) => item.tier == 'vip').length;
-  int get activeCount =>
-      _allData.where((item) => item.status == 'active').length;
-  int get filteredCount => _filteredData.length;
-  int get totalPages =>
-      _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
-  bool get hasPreviousPage => currentPage > 0;
-  bool get hasNextPage => currentPage < totalPages - 1;
+  int currentPage = 1;
+  int rowsPerPage = 10;
+
+  Map<String, int> orderCountMap = {};
+
+  int get totalPages {
+    if (_filteredData.isEmpty) return 1;
+    return (_filteredData.length / rowsPerPage).ceil();
+  }
 
   List<CustomerModel> get paginatedData {
-    if (_filteredData.isEmpty) {
-      return [];
-    }
+    if (_filteredData.isEmpty) return [];
 
-    final start = currentPage * rowsPerPage;
+    final start = (currentPage - 1) * rowsPerPage;
     final end = start + rowsPerPage;
     return _filteredData.sublist(
       start,
@@ -39,66 +33,65 @@ class CustomerController extends ChangeNotifier {
     );
   }
 
-  void setData(List<CustomerModel> data) {
-    _allData = data;
-    _applyFilter(notify: true);
+  Future<void> fetchCustomers() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      _allData = await _service.getCustomers();
+      for (var c in _allData) {
+        orderCountMap[c.id] = await _service.getOrdersCount(c.id);
+      }
+      _filteredData = List.from(_allData);
+    } catch (e) {
+      print("Error fetching customers: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   void search(String value) {
     _searchText = value.trim().toLowerCase();
-    currentPage = 0;
-    _applyFilter(notify: true);
-  }
-
-  void previousPage() {
-    if (!hasPreviousPage) {
-      return;
-    }
-    currentPage--;
-    notifyListeners();
-  }
-
-  void nextPage() {
-    if (!hasNextPage) {
-      return;
-    }
-    currentPage++;
-    notifyListeners();
-  }
-
-  Future<void> create(CustomerModel model) async {
-    await _service.create(model);
-  }
-
-  Future<void> update(CustomerModel model) async {
-    await _service.update(model);
-  }
-
-  Future<void> delete(String id) async {
-    await _service.delete(id);
-  }
-
-  void _applyFilter({required bool notify}) {
+    currentPage = 1;
+    
     if (_searchText.isEmpty) {
-      _filteredData = List<CustomerModel>.from(_allData);
+      _filteredData = List.from(_allData);
     } else {
       _filteredData = _allData.where((item) {
         return item.fullName.toLowerCase().contains(_searchText) ||
             item.email.toLowerCase().contains(_searchText) ||
-            item.phone.toLowerCase().contains(_searchText) ||
-            item.city.toLowerCase().contains(_searchText);
+            item.phone.toLowerCase().contains(_searchText);
       }).toList();
     }
+    
+    notifyListeners();
+  }
 
-    if (currentPage >= totalPages) {
-      currentPage = totalPages - 1;
-    }
-    if (currentPage < 0) {
-      currentPage = 0;
-    }
-
-    if (notify) {
+  void changePage(int page) {
+    if (page >= 1 && page <= totalPages) {
+      currentPage = page;
       notifyListeners();
     }
+  }
+
+  Future<void> delete(String id) async {
+    await _service.deleteCustomer(id);
+    _allData.removeWhere((c) => c.id == id);
+    _filteredData.removeWhere((c) => c.id == id);
+    
+    // adjust current page if out of bounds
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+      currentPage = 1;
+    }
+    
+    notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getOrders(String customerId) async {
+    return await _service.getOrdersOfUser(customerId);
   }
 }

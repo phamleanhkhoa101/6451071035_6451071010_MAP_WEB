@@ -1,485 +1,604 @@
-﻿import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../controllers/brand_controller.dart';
 import '../../data/models/brand_model.dart';
-import '../../data/services/brand_service.dart';
 
-class BrandsPage extends StatefulWidget {
+class BrandsPage extends StatelessWidget {
   const BrandsPage({super.key});
-
   @override
-  State<BrandsPage> createState() => _BrandsPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => BrandController()..loadBrands(),
+      child: const Scaffold(
+        backgroundColor: Color(0xFFF8F9FD), // Nền xám nhạt hiện đại
+        body: _BrandsView(),
+      ),
+    );
+  }
 }
 
-class _BrandsPageState extends State<BrandsPage> {
-  final BrandService _service = BrandService();
-  StreamSubscription<List<BrandModel>>? _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = _service.getAll().listen((data) {
-      if (!mounted) {
-        return;
-      }
-      context.read<BrandController>().setData(data);
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+class _BrandsView extends StatelessWidget {
+  const _BrandsView();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<BrandController>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- HEADER SECTION ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Brands',
+                    "Brand Management",
                     style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2430),
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
                     ),
+                  ),
+                  Text(
+                    "Manage your product partners and labels",
+                    style: TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
-            ),
-            FilledButton.icon(
-              onPressed: () => _showDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Thêm thương hiệu'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 360,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'Tìm theo tên hoặc mô tả...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
+              ElevatedButton.icon(
+                onPressed: () => _showDialog(context),
+                icon: const Icon(
+                  Icons.add_business_rounded,
+                  color: Colors.white,
+                ),
+                label: const Text("ADD NEW BRAND"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigoAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
                 ),
               ),
-            ),
-            _InfoChip(label: 'Tổng số', value: '${controller.totalCount}'),
-            _InfoChip(label: 'Hiển thị', value: '${controller.filteredCount}'),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            ],
+          ),
+
+          const SizedBox(height: 30),
+
+          // --- SEARCH BAR ---
+          Container(
+            width: 400,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: controller.filteredCount == 0
-                ? const Center(child: Text('Chưa có thương hiệu nào để hiển thị.'))
-                : Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: DataTable(
-                            headingRowColor: WidgetStateProperty.all(
-                              const Color(0xFFF1F5F9),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: "Search brands...",
+                prefixIcon: Icon(Icons.search_rounded, color: Colors.indigo),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 15),
+              ),
+              onChanged: controller.search,
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // --- TABLE SECTION ---
+          controller.isLoading
+              ? const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(
+                            Colors.indigo.withOpacity(0.05),
+                          ),
+                          dataRowHeight: 70,
+                          horizontalMargin: 20,
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                "SEQ",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
                             ),
-                            columnSpacing: 28,
-                            horizontalMargin: 12,
-                            columns: const [
-                              DataColumn(label: Text('SEQ')),
-                              DataColumn(label: Text('Thương hiệu')),
-                              DataColumn(label: Text('Ưu tiên')),
-                              DataColumn(label: Text('Nổi bật')),
-                              DataColumn(label: Text('Trạng thái')),
-                              DataColumn(label: Text('Cập nhật')),
-                              DataColumn(label: Text('Thao tác')),
-                            ],
-                            rows: List.generate(controller.paginatedData.length, (
-                              index,
-                            ) {
-                              final item = controller.paginatedData[index];
-                              final rowNumber =
-                                  (controller.currentPage *
-                                      controller.rowsPerPage) +
-                                  index +
-                                  1;
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text('$rowNumber')),
-                                  DataCell(_BrandCell(brand: item)),
-                                  DataCell(Text('${item.priority}')),
-                                  DataCell(_boolIcon(item.isFeatured)),
-                                  DataCell(_StatusBadge(active: item.isActive)),
-                                  DataCell(Text(_formatDate(item.updatedAt))),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 150,
+                            DataColumn(
+                              label: Text(
+                                "BRAND",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "CATEGORIES",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "FEATURED",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "STATUS",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "UPDATED",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "ACTION",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: controller.paginatedData.asMap().entries.map((
+                            entry,
+                          ) {
+                            final index = entry.key;
+                            final b = entry.value;
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Text(
+                                    "${(controller.currentPage - 1) * controller.rowsPerPage + index + 1}",
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 45,
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          color: Colors.grey[100],
+                                          image: b.imageURL.isNotEmpty
+                                              ? DecorationImage(
+                                                  image: NetworkImage(
+                                                    b.imageURL,
+                                                  ),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
+                                        ),
+                                        child: b.imageURL.isEmpty
+                                            ? const Icon(Icons.business)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        b.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 180,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
                                       child: Row(
-                                        children: [
-                                          OutlinedButton(
-                                            onPressed: () => _showDialog(
-                                              context,
-                                              brand: item,
-                                            ),
-                                            child: const Text('Sửa'),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          TextButton(
-                                            onPressed: () =>
-                                                _confirmDelete(context, item),
-                                            child: const Text('Xóa'),
-                                          ),
-                                        ],
+                                        children:
+                                            (controller.brandCategoriesMap[b
+                                                        .id] ??
+                                                    [])
+                                                .map(
+                                                  (cat) => Container(
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                          right: 4,
+                                                        ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blue
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      cat,
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.blue,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
                                       ),
                                     ),
                                   ),
-                                ],
-                              );
-                            }),
-                          ),
+                                ),
+                                DataCell(
+                                  Icon(
+                                    b.isFeatured
+                                        ? Icons.stars_rounded
+                                        : Icons.star_outline_rounded,
+                                    color: b.isFeatured
+                                        ? Colors.amber
+                                        : Colors.grey[400],
+                                  ),
+                                ),
+                                DataCell(_buildStatusBadge(b.isActive)),
+                                DataCell(
+                                  Text(
+                                    b.updatedAt != null
+                                        ? "${b.updatedAt!.day}/${b.updatedAt!.month}/${b.updatedAt!.year}"
+                                        : "-",
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      _buildIconButton(
+                                        Icons.edit_outlined,
+                                        Colors.blue,
+                                        () => _showDialog(context, brand: b),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildIconButton(
+                                        Icons.delete_outline_rounded,
+                                        Colors.red,
+                                        () => _confirmDelete(context, b.id),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _Pager(
-                        pageText:
-                            'Trang ${controller.currentPage + 1}/${controller.totalPages}',
-                        hasPreviousPage: controller.hasPreviousPage,
-                        hasNextPage: controller.hasNextPage,
-                        onPrevious: controller.previousPage,
-                        onNext: controller.nextPage,
-                      ),
-                    ],
+                    ),
                   ),
-          ),
-        ),
-      ],
-    );
-  }
+                ),
 
-  Future<void> _confirmDelete(BuildContext context, BrandModel brand) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa thương hiệu'),
-        content: Text('Bạn có chắc muốn xóa "${brand.name}" không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Xóa'),
-          ),
+          const SizedBox(height: 20),
+
+          // --- PAGINATION ---
+          _buildPagination(controller),
         ],
       ),
     );
-
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
-
-    await context.read<BrandController>().delete(brand.id);
   }
 
-  void _showDialog(BuildContext context, {BrandModel? brand}) {
-    final nameController = TextEditingController(text: brand?.name ?? '');
-    final logoController = TextEditingController(text: brand?.logoUrl ?? '');
-    final descriptionController = TextEditingController(
-      text: brand?.description ?? '',
+  Widget _buildStatusBadge(bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        isActive ? "Active" : "Inactive",
+        style: TextStyle(
+          color: isActive ? Colors.green : Colors.red,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
-    final priorityController = TextEditingController(
-      text: '${brand?.priority ?? 0}',
-    );
-    var isActive = brand?.isActive ?? true;
-    var isFeatured = brand?.isFeatured ?? false;
+  }
 
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: Text(brand == null ? 'Thêm thương hiệu' : 'Cập nhật thương hiệu'),
-          content: SizedBox(
-            width: 440,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Tên thương hiệu'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: logoController,
-                    decoration: const InputDecoration(labelText: 'Logo URL'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Mô tả'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: priorityController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Thứ tự ưu tiên'),
-                  ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: isActive,
-                    title: const Text('Kích hoạt'),
-                    onChanged: (value) => setState(() => isActive = value),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: isFeatured,
-                    title: const Text('Nổi bật'),
-                    onChanged: (value) => setState(() => isFeatured = value),
-                  ),
-                ],
+  Widget _buildIconButton(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 20, color: color),
+      ),
+    );
+  }
+
+  Widget _buildPagination(BrandController controller) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(controller.totalPages, (index) {
+        final page = index + 1;
+        bool isCurrent = controller.currentPage == page;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: InkWell(
+            onTap: () => controller.changePage(page),
+            child: Container(
+              width: 35,
+              height: 35,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isCurrent ? Colors.indigo : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isCurrent ? Colors.indigo : Colors.grey[300]!,
+                ),
+              ),
+              child: Text(
+                "$page",
+                style: TextStyle(
+                  color: isCurrent ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final trimmedName = nameController.text.trim();
-                if (trimmedName.isEmpty) {
-                  return;
-                }
+        );
+      }),
+    );
+  }
 
-                final model = BrandModel(
-                  id: brand?.id ?? '',
-                  name: trimmedName,
-                  logoUrl: logoController.text.trim(),
-                  description: descriptionController.text.trim(),
-                  isActive: isActive,
-                  isFeatured: isFeatured,
-                  priority: int.tryParse(priorityController.text.trim()) ?? 0,
-                  createdAt: brand?.createdAt ?? DateTime.now(),
-                  updatedAt: DateTime.now(),
-                );
-
-                final controller = context.read<BrandController>();
-                if (brand == null) {
-                  await controller.create(model);
-                } else {
-                  await controller.update(model);
-                }
-
-                if (!dialogContext.mounted) {
-                  return;
-                }
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text(brand == null ? 'Thêm' : 'Lưu'),
-            ),
-          ],
-        ),
+  void _confirmDelete(BuildContext context, String id) {
+    final controller = context.read<BrandController>();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Delete Brand?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await controller.delete(id);
+              Navigator.pop(context);
+            },
+            child: const Text("DELETE", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _boolIcon(bool value) {
-    return Icon(
-      value ? Icons.star_rounded : Icons.star_outline_rounded,
-      color: value ? Colors.amber : Colors.grey,
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) {
-      return '--';
+  void _showDialog(BuildContext context, {BrandModel? brand}) async {
+    final controller = context.read<BrandController>();
+    await controller.fetchAllCategories();
+    if (brand != null) {
+      await controller.loadBrandCategories(brand.id);
+    } else {
+      controller.selectedCategoryIds = [];
     }
 
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final year = value.year.toString();
-    return '$day/$month/$year';
-  }
-}
+    final nameController = TextEditingController(text: brand?.name ?? "");
+    final imageController = TextEditingController(text: brand?.imageURL ?? "");
+    bool isActive = brand?.isActive ?? true;
+    bool isFeatured = brand?.isFeatured ?? false;
 
-class _BrandCell extends StatelessWidget {
-  const _BrandCell({required this.brand});
-
-  final BrandModel brand;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 320,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 52,
-              height: 52,
-              color: const Color(0xFFE2E8F0),
-              child: brand.logoUrl.isEmpty
-                  ? const Icon(Icons.branding_watermark_outlined)
-                  : Image.network(
-                      brand.logoUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.broken_image_outlined),
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(brand == null ? "✨ New Brand" : "📝 Edit Brand"),
+            content: SizedBox(
+              width: 550,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: "Brand Name",
+                        prefixIcon: const Icon(Icons.label_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  brand.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: imageController,
+                      decoration: InputDecoration(
+                        labelText: "Logo URL",
+                        prefixIcon: const Icon(Icons.image_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    if (imageController.text.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          imageController.text,
+                          height: 100,
+                          width: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.broken_image,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SwitchListTile(
+                            title: const Text("Active"),
+                            value: isActive,
+                            onChanged: (v) => setState(() => isActive = v),
+                          ),
+                        ),
+                        Expanded(
+                          child: SwitchListTile(
+                            title: const Text("Featured"),
+                            value: isFeatured,
+                            onChanged: (v) => setState(() => isFeatured = v),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 32),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Categories Management",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: ListView(
+                        padding: const EdgeInsets.all(8),
+                        children: controller.allCategories.map((cat) {
+                          final isSelected = controller.selectedCategoryIds
+                              .contains(cat.id);
+                          return CheckboxListTile(
+                            value: isSelected,
+                            title: Text(cat.name),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (checked) {
+                              setState(() {
+                                if (checked == true) {
+                                  controller.selectedCategoryIds.add(cat.id);
+                                } else {
+                                  controller.selectedCategoryIds.remove(cat.id);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  brand.description.isEmpty ? 'Chưa có mô tả' : brand.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ],
+                onPressed: () async {
+                  final newBrand = BrandModel(
+                    id: brand?.id ?? "",
+                    name: nameController.text,
+                    imageURL: imageController.text,
+                    isFeatured: isFeatured,
+                    isActive: isActive,
+                    productsCount: brand?.productsCount ?? 0,
+                    viewCount: brand?.viewCount ?? 0,
+                    createdAt: brand?.createdAt ?? DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+                  if (brand == null)
+                    await controller.add(newBrand);
+                  else
+                    await controller.update(newBrand);
+                  if (brand != null) await controller.saveRelations(brand.id);
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  "SAVE BRAND",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: const TextStyle(color: Color(0xFF64748B))),
-          const SizedBox(width: 8),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        active ? 'Active' : 'Inactive',
-        style: TextStyle(color: color, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-class _Pager extends StatelessWidget {
-  const _Pager({
-    required this.pageText,
-    required this.hasPreviousPage,
-    required this.hasNextPage,
-    required this.onPrevious,
-    required this.onNext,
-  });
-
-  final String pageText;
-  final bool hasPreviousPage;
-  final bool hasNextPage;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(pageText, style: const TextStyle(color: Color(0xFF64748B))),
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: hasPreviousPage ? onPrevious : null,
-              child: const Text('Trước'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.tonal(
-              onPressed: hasNextPage ? onNext : null,
-              child: const Text('Sau'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-

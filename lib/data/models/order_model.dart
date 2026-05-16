@@ -1,187 +1,96 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderModel {
+  final String docId;
+  final String id;
+  final String userId;
+
+  final List<dynamic> products;
+
+  final double subTotal;
+  final double taxAmount;
+  final double taxRate;
+  final double shippingAmount;
+
+  final double totalDiscountAmount;
+  final double couponDiscountAmount;
+  final double totalAmount;
+
+  final String paymentStatus;
+  final String orderStatus;
+
+  final String paymentMethod;
+  final String paymentMethodType;
+
+  final int itemCount;
+
+  final DateTime orderDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? shippingDate;
+
+  final Map<String, dynamic> shippingAddress;
+
+  // 👇 Admin list helper fields
+  String customerName;
+
   OrderModel({
+    required this.docId,
     required this.id,
-    required this.orderCode,
-    required this.customerName,
-    required this.customerPhone,
-    required this.shippingAddress,
-    required this.paymentMethod,
-    required this.status,
-    required this.itemsCount,
+    required this.userId,
+    required this.products,
+    required this.subTotal,
+    required this.taxAmount,
+    required this.taxRate,
+    required this.shippingAmount,
+    required this.totalDiscountAmount,
+    required this.couponDiscountAmount,
     required this.totalAmount,
-    required this.note,
-    this.createdAt,
-    this.updatedAt,
+    required this.paymentStatus,
+    required this.orderStatus,
+    required this.paymentMethod,
+    required this.paymentMethodType,
+    required this.itemCount,
+    required this.orderDate,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.shippingAddress,
+    this.shippingDate,
+    this.customerName = '',
   });
 
-  final String id;
-  final String orderCode;
-  final String customerName;
-  final String customerPhone;
-  final String shippingAddress;
-  final String paymentMethod;
-  final String status;
-  final int itemsCount;
-  final double totalAmount;
-  final String note;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
-  factory OrderModel.fromMap(Map<String, dynamic> map, String id) {
+  factory OrderModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
     return OrderModel(
-      id: id,
-      orderCode: _toStringValue(
-        map['orderCode'] ?? map['code'],
-        preferredKeys: const ['code', 'id', 'value'],
-      ),
-      customerName: _toStringValue(
-        map['customerName'] ?? map['customer'],
-        preferredKeys: const ['fullName', 'name', 'displayName'],
-      ),
-      customerPhone: _toStringValue(
-        map['customerPhone'] ?? map['customer'],
-        preferredKeys: const ['phone', 'mobile', 'phoneNumber'],
-      ),
-      shippingAddress: _toStringValue(
-        map['shippingAddress'] ?? map['address'],
-        preferredKeys: const [
-          'fullAddress',
-          'address',
-          'street',
-          'district',
-          'city',
-        ],
-      ),
-      paymentMethod: _toStringValue(
-        map['paymentMethod'],
-        preferredKeys: const ['name', 'method', 'type', 'label'],
-      ),
-      status: _normalizeStatus(map['status']),
-      itemsCount: _toInt(
-        map['itemsCount'] ??
-            (map['items'] is List ? (map['items'] as List).length : null),
-      ),
-      totalAmount: _toDouble(
-        map['totalAmount'] ??
-            map['total'] ??
-            (map['summary'] is Map
-                ? Map<String, dynamic>.from(map['summary'] as Map)['total']
-                : null),
-      ),
-      note: _toStringValue(
-        map['note'],
-        preferredKeys: const ['message', 'content', 'text'],
-      ),
-      createdAt: _toDate(map['createdAt']),
-      updatedAt: _toDate(map['updatedAt']),
+      docId: doc.id,
+      id: data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      products: data['products'] ?? [],
+      subTotal: _parseDouble(data['subTotal']),
+      taxAmount: _parseDouble(data['taxAmount']),
+      taxRate: _parseDouble(data['taxRate']),
+      shippingAmount: _parseDouble(data['shippingAmount']),
+      totalDiscountAmount: _parseDouble(data['totalDiscountAmount']),
+      couponDiscountAmount: _parseDouble(data['couponDiscountAmount']),
+      totalAmount: _parseDouble(data['totalAmount']),
+      paymentStatus: data['paymentStatus'] ?? '',
+      orderStatus: data['orderStatus'] ?? '',
+      paymentMethod: data['paymentMethod'] ?? '',
+      paymentMethodType: data['paymentMethodType'] ?? '',
+      itemCount: (data['itemCount'] is num) ? (data['itemCount'] as num).toInt() : (int.tryParse(data['itemCount']?.toString() ?? '') ?? 0),
+      orderDate: data['orderDate'] != null ? (data['orderDate'] as Timestamp).toDate() : DateTime.now(),
+      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
+      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : DateTime.now(),
+      shippingDate: data['shippingDate'] != null ? (data['shippingDate'] as Timestamp).toDate() : null,
+      shippingAddress: data['shippingAddress'] ?? {},
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'orderCode': orderCode,
-      'customerName': customerName,
-      'customerPhone': customerPhone,
-      'shippingAddress': shippingAddress,
-      'paymentMethod': paymentMethod,
-      'status': status,
-      'itemsCount': itemsCount,
-      'totalAmount': totalAmount,
-      'note': note,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-  }
-
-  static DateTime? _toDate(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is int) {
-      return DateTime.fromMillisecondsSinceEpoch(value);
-    }
-    if (value is String && value.trim().isNotEmpty) {
-      return DateTime.tryParse(value);
-    }
-    return null;
-  }
-
-  static double _toDouble(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is num) {
-      return value.toInt();
-    }
-    return int.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  static String _normalizeStatus(dynamic value) {
-    final raw = _toStringValue(
-      value,
-      preferredKeys: const ['label', 'value', 'status'],
-    ).toLowerCase();
-
-    if (raw.contains('deliver')) {
-      return 'delivered';
-    }
-    if (raw.contains('ship')) {
-      return 'shipping';
-    }
-    if (raw.contains('cancel')) {
-      return 'cancelled';
-    }
-    if (raw.contains('pend')) {
-      return 'pending';
-    }
-    return raw.isEmpty ? 'pending' : raw;
-  }
-
-  static String _toStringValue(
-    dynamic value, {
-    List<String> preferredKeys = const [],
-  }) {
-    if (value == null) {
-      return '';
-    }
-    if (value is String) {
-      return value;
-    }
-    if (value is num || value is bool) {
-      return value.toString();
-    }
-    if (value is Map) {
-      final mapped = Map<String, dynamic>.from(value);
-      for (final key in preferredKeys) {
-        final candidate = _toStringValue(mapped[key]);
-        if (candidate.isNotEmpty) {
-          return candidate;
-        }
-      }
-
-      final parts = mapped.values
-          .map((item) => _toStringValue(item))
-          .where((item) => item.isNotEmpty)
-          .toList();
-      return parts.join(', ');
-    }
-    if (value is List) {
-      return value
-          .map((item) => _toStringValue(item))
-          .where((item) => item.isNotEmpty)
-          .join(', ');
-    }
-    return value.toString();
   }
 }

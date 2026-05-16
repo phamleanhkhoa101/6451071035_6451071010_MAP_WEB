@@ -1,303 +1,428 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/category_controller.dart';
 import '../../data/models/category_model.dart';
 
-class CategoriesPage extends StatefulWidget {
+class CategoriesPage extends StatelessWidget {
   const CategoriesPage({super.key});
 
   @override
-  State<CategoriesPage> createState() => _CategoriesPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CategoryController()..fetchCategories(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA), // Màu nền nhẹ nhàng
+        body: const _CategoriesView(),
+      ),
+    );
+  }
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoryController>().fetchCategories();
-    });
-  }
+class _CategoriesView extends StatelessWidget {
+  const _CategoriesView();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CategoryController>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Product Categories',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2430),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Product Categories",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3436),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showDialog(context),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text("ADD CATEGORY"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigoAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 15,
                   ),
-                ],
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () => _showDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Thêm danh mục'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 340,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'Tìm theo tên danh mục...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ),
-              ),
-            ),
-            _InfoChip(
-              label: 'Tổng số',
-              value: '${controller.categories.length}',
-            ),
-            _InfoChip(
-              label: 'Hiển thị',
-              value: '${controller.filtered.length}',
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: _buildBody(context, controller),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBody(BuildContext context, CategoryController controller) {
-    if (controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (controller.errorMessage != null) {
-      return Center(
-        child: Text(
-          'Không tải được dữ liệu.\n${controller.errorMessage}',
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    if (controller.filtered.isEmpty) {
-      return const Center(
-        child: Text('Chưa có danh mục nào hoặc không khớp từ khóa tìm kiếm.'),
-      );
-    }
-
-    return SingleChildScrollView(
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(const Color(0xFFF1F5F9)),
-        columnSpacing: 28,
-        horizontalMargin: 12,
-        columns: const [
-          DataColumn(label: Text('Danh mục')),
-          DataColumn(label: Text('Trạng thái')),
-          DataColumn(label: Text('Nổi bật')),
-          DataColumn(label: Text('Số SP')),
-          DataColumn(label: Text('Cập nhật')),
-          DataColumn(label: Text('Thao tác')),
-        ],
-        rows: controller.filtered.map((category) {
-          return DataRow(
-            cells: [
-              DataCell(
-                Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        color: const Color(0xFFE2E8F0),
-                        child: category.imageURL.isEmpty
-                            ? const Icon(Icons.image_not_supported_outlined)
-                            : Image.network(
-                                category.imageURL,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const Icon(
-                                  Icons.broken_image_outlined,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            category.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          Text(
-                            category.createdBy.isEmpty
-                                ? 'Tạo bởi admin'
-                                : 'Tạo bởi ${category.createdBy}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              DataCell(_StatusBadge(
-                text: category.isActive ? 'Active' : 'Inactive',
-                color: category.isActive
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFFB71C1C),
-              )),
-              DataCell(
-                Icon(
-                  category.isFeatured
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
-                  color: category.isFeatured ? Colors.amber : Colors.grey,
-                ),
-              ),
-              DataCell(Text('${category.numberOfProducts}')),
-              DataCell(Text(_formatDate(category.updatedAt))),
-              DataCell(
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => _showDialog(context, category: category),
-                      child: const Text('Sửa'),
-                    ),
-                    TextButton(
-                      onPressed: () => _confirmDelete(context, category),
-                      child: const Text('Xóa'),
-                    ),
-                  ],
+                  elevation: 2,
                 ),
               ),
             ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    CategoryModel category,
-  ) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa danh mục'),
-        content: Text('Bạn có chắc muốn xóa "${category.name}" không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Xóa'),
+          const SizedBox(height: 24),
+
+          // Search Bar Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: TextField(
+              onChanged: controller.search,
+              decoration: const InputDecoration(
+                hintText: "Search categories by name...",
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Table Content
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                  ),
+                ],
+              ),
+              child: controller.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.all(
+                            const Color(0xFFF1F3F5),
+                          ),
+                          dataRowMinHeight: 70,
+                          dataRowMaxHeight: 70,
+                          horizontalMargin: 20,
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                "SEQ",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "CATEGORY",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "FEATURED",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "STATUS",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "UPDATED",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                "ACTIONS",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: controller.paginatedData.asMap().entries.map((
+                            entry,
+                          ) {
+                            final index = entry.key;
+                            final c = entry.value;
+                            return DataRow(
+                              // Hiệu ứng rê chuột (Hover) mặc định của Flutter DataTable
+                              onSelectChanged: (selected) {},
+                              cells: [
+                                DataCell(
+                                  Text(
+                                    "${(controller.currentPage - 1) * controller.rowsPerPage + index + 1}",
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          shape: BoxShape.circle,
+                                        ),
+                                        clipBehavior: Clip.hardEdge,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(6.0),
+                                          child: c.imageURL.isNotEmpty
+                                              ? Image.network(
+                                                  c.imageURL,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      const Icon(
+                                                        Icons.broken_image,
+                                                        size: 20,
+                                                      ),
+                                                )
+                                              : const Icon(
+                                                  Icons.image,
+                                                  size: 20,
+                                                ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        c.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  Icon(
+                                    c.isFeatured
+                                        ? Icons.star_rounded
+                                        : Icons.star_outline_rounded,
+                                    color: c.isFeatured
+                                        ? Colors.amber
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                DataCell(_buildStatusBadge(c.isActive)),
+                                DataCell(
+                                  Text(
+                                    c.updatedAt != null
+                                        ? "${c.updatedAt!.day.toString().padLeft(2, '0')}/${c.updatedAt!.month.toString().padLeft(2, '0')}/${c.updatedAt!.year}"
+                                        : "-",
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      _buildActionButton(
+                                        Icons.edit_outlined,
+                                        Colors.blue,
+                                        () => _showDialog(context, category: c),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                        Icons.delete_outline,
+                                        Colors.redAccent,
+                                        () => _confirmDelete(context, c.id),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+
+          // Pagination Section
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(controller.totalPages, (index) {
+              final page = index + 1;
+              final isSelected = controller.currentPage == page;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSelected
+                        ? Colors.indigoAccent
+                        : Colors.white,
+                    foregroundColor: isSelected ? Colors.white : Colors.black87,
+                    elevation: isSelected ? 4 : 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: isSelected
+                            ? Colors.transparent
+                            : Colors.grey[300]!,
+                      ),
+                    ),
+                  ),
+                  onPressed: () => controller.changePage(page),
+                  child: Text("$page"),
+                ),
+              );
+            }),
           ),
         ],
       ),
     );
+  }
 
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
+  // Widget Badge Trạng thái
+  Widget _buildStatusBadge(bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isActive ? Colors.green : Colors.red,
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        isActive ? "Active" : "Inactive",
+        style: TextStyle(
+          color: isActive ? Colors.green[700] : Colors.red[700],
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
-    await context.read<CategoryController>().delete(category.id);
+  // Widget Nút Action tròn
+  Widget _buildActionButton(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 20, color: color),
+      ),
+    );
+  }
+
+  // Các hàm Dialog giữ nguyên logic nhưng bọc trong UI mới
+  void _confirmDelete(BuildContext context, String id) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Text("Confirm Delete"),
+        content: const Text("This action cannot be undone. Are you sure?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog first
+              if (!context.mounted) return;
+              await context.read<CategoryController>().delete(id);
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDialog(BuildContext context, {CategoryModel? category}) {
-    final nameController = TextEditingController(text: category?.name ?? '');
+    final nameController = TextEditingController(text: category?.name ?? "");
     final imageController = TextEditingController(
-      text: category?.imageURL ?? '',
+      text: category?.imageURL ?? "",
     );
-    var isActive = category?.isActive ?? true;
-    var isFeatured = category?.isFeatured ?? false;
+    bool isActive = category?.isActive ?? true;
+    bool isFeatured = category?.isFeatured ?? false;
 
-    showDialog<void>(
+    showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
+      builder: (_) => StatefulBuilder(
         builder: (dialogContext, setState) => AlertDialog(
-          title: Text(category == null ? 'Thêm danh mục' : 'Cập nhật danh mục'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(category == null ? "New Category" : " Edit Category"),
           content: SizedBox(
-            width: 420,
+            width: 450,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tên danh mục',
+                    decoration: InputDecoration(
+                      labelText: "Category Name",
+                      prefixIcon: const Icon(Icons.label_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: imageController,
-                    decoration: const InputDecoration(
-                      labelText: 'Image URL',
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: "Image URL",
+                      prefixIcon: const Icon(Icons.link),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 15),
+                  if (imageController.text.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        imageController.text,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
                   SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
                     value: isActive,
-                    title: const Text('Kích hoạt'),
-                    onChanged: (value) => setState(() => isActive = value),
+                    title: const Text("Active Status"),
+                    activeColor: Colors.indigoAccent,
+                    onChanged: (v) => setState(() => isActive = v),
                   ),
                   SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
                     value: isFeatured,
-                    title: const Text('Nổi bật'),
-                    onChanged: (value) => setState(() => isFeatured = value),
+                    title: const Text("Featured Category"),
+                    activeColor: Colors.orange,
+                    onChanged: (v) => setState(() => isFeatured = v),
                   ),
                 ],
               ),
@@ -305,119 +430,49 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Hủy'),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
             ),
-            FilledButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigoAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () async {
-                final trimmedName = nameController.text.trim();
-                if (trimmedName.isEmpty) {
-                  return;
-                }
-
                 final newCategory = CategoryModel(
-                  id: category?.id ?? '',
-                  name: trimmedName,
-                  imageURL: imageController.text.trim(),
+                  id: category?.id ?? "",
+                  name: nameController.text,
+                  imageURL: imageController.text,
                   isActive: isActive,
                   isFeatured: isFeatured,
-                  priority: category?.priority ?? 0,
-                  numberOfProducts: category?.numberOfProducts ?? 0,
-                  viewCount: category?.viewCount ?? 0,
-                  createdBy: category?.createdBy ?? 'admin',
-                  updatedBy: 'admin',
+                  priority: 0,
+                  numberOfProducts: 0,
+                  viewCount: 0,
+                  createdBy: "admin",
+                  updatedBy: "admin",
                   createdAt: category?.createdAt ?? DateTime.now(),
                   updatedAt: DateTime.now(),
                 );
 
                 final controller = context.read<CategoryController>();
+                Navigator.pop(dialogContext); // Close dialog first
+
                 if (category == null) {
                   await controller.add(newCategory);
                 } else {
                   await controller.update(newCategory);
                 }
-
-                if (!dialogContext.mounted) {
-                  return;
-                }
-
-                Navigator.of(dialogContext).pop();
               },
-              child: Text(category == null ? 'Thêm' : 'Lưu'),
+              child: const Text(
+                "Save Changes",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) {
-      return '--';
-    }
-
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final year = value.year.toString();
-    return '$day/$month/$year';
-  }
 }
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: Color(0xFF64748B)),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.text, required this.color});
-
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-

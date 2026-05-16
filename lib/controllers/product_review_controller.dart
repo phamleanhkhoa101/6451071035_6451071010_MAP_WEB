@@ -1,105 +1,88 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-
 import '../data/models/product_review_model.dart';
+import '../data/models/customer_model.dart';
 import '../data/services/product_review_service.dart';
+import '../data/services/customer_service.dart';
 
-class ProductReviewController extends ChangeNotifier {
-  ProductReviewController({ProductReviewService? service})
-    : _service = service ?? ProductReviewService();
+class ReviewController extends ChangeNotifier {
+  final ReviewService reviewService = ReviewService();
+  final CustomerService customerService = CustomerService();
 
-  final ProductReviewService _service;
+  StreamSubscription? _subscription;
 
-  List<ProductReviewModel> _allData = [];
-  List<ProductReviewModel> _filteredData = [];
-  String _searchText = '';
+  List<ReviewModel> allReviews = [];
+  List<ReviewModel> filteredReviews = [];
 
-  int currentPage = 0;
-  int rowsPerPage = 5;
+  Map<String, CustomerModel> customerCache = {};
 
-  int get totalCount => _allData.length;
-  int get approvedCount =>
-      _allData.where((item) => item.status == 'approved').length;
-  int get pendingCount =>
-      _allData.where((item) => item.status == 'pending').length;
-  int get filteredCount => _filteredData.length;
-  int get totalPages =>
-      _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
-  bool get hasPreviousPage => currentPage > 0;
-  bool get hasNextPage => currentPage < totalPages - 1;
+  ReviewController() {
+    _listenReviews();
+  }
 
-  List<ProductReviewModel> get paginatedData {
-    if (_filteredData.isEmpty) {
-      return [];
+  void _listenReviews() {
+    _subscription = reviewService.getAll().listen((data) {
+      allReviews = data;
+      filteredReviews = data;
+      notifyListeners();
+    });
+  }
+
+  /// SEARCH
+  void search(String keyword) {
+    if (keyword.isEmpty) {
+      filteredReviews = allReviews;
+    } else {
+      filteredReviews = allReviews.where((e) {
+        return e.title.toLowerCase().contains(keyword.toLowerCase()) ||
+            e.productName.toLowerCase().contains(keyword.toLowerCase());
+      }).toList();
     }
-
-    final start = currentPage * rowsPerPage;
-    final end = start + rowsPerPage;
-    return _filteredData.sublist(
-      start,
-      end > _filteredData.length ? _filteredData.length : end,
-    );
-  }
-
-  void setData(List<ProductReviewModel> data) {
-    _allData = data;
-    _applyFilter(notify: true);
-  }
-
-  void search(String value) {
-    _searchText = value.trim().toLowerCase();
-    currentPage = 0;
-    _applyFilter(notify: true);
-  }
-
-  void previousPage() {
-    if (!hasPreviousPage) {
-      return;
-    }
-    currentPage--;
     notifyListeners();
   }
 
-  void nextPage() {
-    if (!hasNextPage) {
-      return;
+  /// GET CUSTOMER FULLNAME
+  Future<String> getCustomerName(String userId) async {
+    if (customerCache.containsKey(userId)) {
+      return customerCache[userId]!.fullName;
     }
-    currentPage++;
-    notifyListeners();
-  }
+    final customer = await customerService.getById(userId);
 
-  Future<void> create(ProductReviewModel model) async {
-    await _service.create(model);
-  }
+    if (customer != null) {
+      customerCache[userId] = customer;
+      return customer.fullName;
+    }
 
-  Future<void> update(ProductReviewModel model) async {
-    await _service.update(model);
+    return "Unknown";
   }
 
   Future<void> delete(String id) async {
-    await _service.delete(id);
+    await reviewService.delete(id);
   }
 
-  void _applyFilter({required bool notify}) {
-    if (_searchText.isEmpty) {
-      _filteredData = List<ProductReviewModel>.from(_allData);
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  String statusFilter = "all";
+
+  void filterByStatus(String value) {
+    statusFilter = value;
+
+    if (value == "all") {
+      filteredReviews = allReviews;
+    } else if (value == "pending") {
+      filteredReviews = allReviews.where((e) => e.isApproved == false).toList();
     } else {
-      _filteredData = _allData.where((item) {
-        return item.productName.toLowerCase().contains(_searchText) ||
-            item.customerName.toLowerCase().contains(_searchText) ||
-            item.comment.toLowerCase().contains(_searchText) ||
-            item.status.toLowerCase().contains(_searchText);
-      }).toList();
+      filteredReviews = allReviews.where((e) => e.isApproved == true).toList();
     }
 
-    if (currentPage >= totalPages) {
-      currentPage = totalPages - 1;
-    }
-    if (currentPage < 0) {
-      currentPage = 0;
-    }
+    notifyListeners();
+  }
 
-    if (notify) {
-      notifyListeners();
-    }
+  Future<void> approve(ReviewModel review) async {
+    await reviewService.approveAndUpdateProduct(review);
   }
 }

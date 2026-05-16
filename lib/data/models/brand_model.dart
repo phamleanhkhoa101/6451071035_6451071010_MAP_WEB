@@ -1,54 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BrandModel {
+  String id;
+  String name;
+  String imageURL;
+  bool isFeatured;
+  bool isActive;
+  int productsCount;
+  int viewCount;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   BrandModel({
     required this.id,
     required this.name,
-    required this.logoUrl,
-    required this.description,
-    required this.isActive,
+    required this.imageURL,
     required this.isFeatured,
-    required this.priority,
+    required this.isActive,
+    required this.productsCount,
+    required this.viewCount,
     this.createdAt,
     this.updatedAt,
   });
 
-  final String id;
-  final String name;
-  final String logoUrl;
-  final String description;
-  final bool isActive;
-  final bool isFeatured;
-  final int priority;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  factory BrandModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
-  factory BrandModel.fromMap(Map<String, dynamic> map, String id) {
     return BrandModel(
-      id: id,
-      name: map['name'] ?? '',
-      logoUrl: map['logoUrl'] ?? map['logoURL'] ?? '',
-      description: map['description'] ?? '',
-      isActive: map['isActive'] ?? true,
-      isFeatured: map['isFeatured'] ?? false,
-      priority: map['priority'] ?? 0,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+      id: doc.id,
+      name: data['name'] ?? '',
+      imageURL: data['imageURL'] ?? '',
+      isFeatured: data['isFeatured'] ?? false,
+      isActive: data['isActive'] ?? true,
+      productsCount: data['productsCount'] ?? 0,
+      viewCount: data['viewCount'] ?? 0,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'logoUrl': logoUrl,
-      'description': description,
-      'isActive': isActive,
+      'imageURL': imageURL,
       'isFeatured': isFeatured,
-      'priority': priority,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'isActive': isActive,
+      'productsCount': productsCount,
+      'viewCount': viewCount,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 }

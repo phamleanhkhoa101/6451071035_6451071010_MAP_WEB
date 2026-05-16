@@ -1,168 +1,236 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../controllers/attribute_controller.dart';
 import '../../data/models/attribute_model.dart';
+import '../../data/services/attribute_service.dart';
 
 class AttributeFormPage extends StatefulWidget {
-  const AttributeFormPage({super.key, this.attribute});
-
   final AttributeModel? attribute;
+
+  const AttributeFormPage({super.key, this.attribute});
 
   @override
   State<AttributeFormPage> createState() => _AttributeFormPageState();
 }
 
 class _AttributeFormPageState extends State<AttributeFormPage> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _valuesController;
+  final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final valueController = TextEditingController();
 
-  late bool _isActive;
-  late bool _isSearchable;
-  late bool _isFilterable;
-  late bool _isColorAttribute;
+  bool isActive = true;
+  bool isSearchable = false;
+  bool isFilterable = false;
+  bool isColorAttribute = false;
+
+  final service = AttributeService();
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    final attribute = widget.attribute;
-    _nameController = TextEditingController(text: attribute?.name ?? '');
-    _valuesController = TextEditingController(
-      text: attribute?.attributeValues.join(', ') ?? '',
-    );
-    _isActive = attribute?.isActive ?? true;
-    _isSearchable = attribute?.isSearchable ?? false;
-    _isFilterable = attribute?.isFilterable ?? false;
-    _isColorAttribute = attribute?.isColorAttribute ?? false;
+    if (widget.attribute != null) {
+      final a = widget.attribute!;
+      nameController.text = a.name;
+      valueController.text = a.attributeValues.join(" | ");
+      isActive = a.isActive;
+      isSearchable = widget.attribute?.isSearchable ?? false;
+      isFilterable = a.isFilterable;
+      isColorAttribute = a.isColorAttribute;
+    }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _valuesController.dispose();
+    nameController.dispose();
+    valueController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      return;
+  Future<void> _saveData() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+    try {
+      final values = valueController.text
+          .split("|")
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      final model = AttributeModel(
+        id: widget.attribute?.id ?? "",
+        name: nameController.text.trim(),
+        attributeValues: values,
+        isActive: isActive,
+        isSearchable: isSearchable,
+        isFilterable: isFilterable,
+        isColorAttribute: isColorAttribute,
+      );
+
+      if (widget.attribute == null) {
+        await service.create(model);
+      } else {
+        await service.update(model);
+      }
+
+      if (mounted) Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    final values = _valuesController.text
-        .split(',')
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList();
-
-    final model = AttributeModel(
-      id: widget.attribute?.id ?? '',
-      name: name,
-      attributeValues: values,
-      isActive: _isActive,
-      isSearchable: _isSearchable,
-      isFilterable: _isFilterable,
-      isColorAttribute: _isColorAttribute,
-      createdAt: widget.attribute?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    final controller = context.read<AttributeController>();
-    if (widget.attribute == null) {
-      await controller.create(model);
-    } else {
-      await controller.update(model);
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.attribute != null;
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F4F9),
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: const Color(0xFF1A1C24),
         title: Text(
-          widget.attribute == null ? 'Thêm thuộc tính' : 'Cập nhật thuộc tính',
+          isEditing ? "Update Attribute" : "Create Attribute",
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 18,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tên thuộc tính',
+              ],
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Attribute Information",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1C24),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: nameController,
+                    validator: (v) =>
+                        v!.trim().isEmpty ? "Name is required" : null,
+                    decoration: InputDecoration(
+                      labelText: "Name",
+                      hintText: "e.g. Size",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      prefixIcon: const Icon(Icons.label_outline),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _valuesController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Danh sách giá trị',
-                        hintText: 'Ví dụ: Đỏ, Xanh, Vàng',
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: valueController,
+                    validator: (v) =>
+                        v!.trim().isEmpty ? "Values are required" : null,
+                    decoration: InputDecoration(
+                      labelText: "Values (separated by |)",
+                      hintText: "e.g. small | medium | large",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      prefixIcon: const Icon(Icons.list_alt_rounded),
                     ),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _isActive,
-                      title: const Text('Kích hoạt'),
-                      onChanged: (value) => setState(() => _isActive = value),
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Settings",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1C24),
                     ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _isSearchable,
-                      title: const Text('Cho phép tìm kiếm'),
-                      onChanged: (value) => setState(() => _isSearchable = value),
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text("Active"),
+                    subtitle: const Text("Enable this attribute in the system"),
+                    value: isActive,
+                    onChanged: (v) => setState(() => isActive = v),
+                    activeColor: Colors.indigoAccent,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  SwitchListTile(
+                    title: Row(
+                      children: [
+                        const Text("Searchable"),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message:
+                              "Allow user to filter product based on this attribute",
+                          child: const Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _isFilterable,
-                      title: const Text('Cho phép lọc'),
-                      onChanged: (value) => setState(() => _isFilterable = value),
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _isColorAttribute,
-                      title: const Text('Thuộc tính màu sắc'),
-                      onChanged: (value) =>
-                          setState(() => _isColorAttribute = value),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _save,
-                        child: Text(widget.attribute == null ? 'Tạo mới' : 'Lưu thay đổi'),
+                    subtitle: const Text("Can be used in search filters"),
+                    value: isSearchable,
+                    onChanged: (v) => setState(() => isSearchable = v),
+                    activeColor: Colors.indigoAccent,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _saveData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigoAccent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
                       ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              isEditing
+                                  ? "UPDATE ATTRIBUTE"
+                                  : "CREATE ATTRIBUTE",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

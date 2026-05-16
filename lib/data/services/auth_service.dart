@@ -1,15 +1,14 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const _key = 'is_logged_in';
+  static const _key = "is_logged_in";
 
   Future<bool> login(String username, String password) async {
-    if (username == 'admin' && password == '123@456') {
+    if (username == "admin" && password == "123@456") {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_key, true);
       return true;
     }
-
     return false;
   }
 

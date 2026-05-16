@@ -3,30 +3,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/coupon_model.dart';
 
 class CouponService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final String collection = 'coupons';
+  final _firestore = FirebaseFirestore.instance;
+  final String collection = "coupons";
 
-  Future<void> create(CouponModel model) async {
-    await _db.collection(collection).add(model.toMap());
+  Future<List<CouponModel>> getCoupons() async {
+    final snapshot = await _firestore.collection(collection).get();
+    return snapshot.docs.map((doc) => CouponModel.fromFirestore(doc)).toList();
   }
 
-  Future<void> update(CouponModel model) async {
-    await _db.collection(collection).doc(model.id).update(model.toMap());
+  Future<String> addCoupon(CouponModel coupon) async {
+    final doc = await _firestore.collection(collection).add(coupon.toMap());
+    return doc.id;
   }
 
-  Future<void> delete(String id) async {
-    await _db.collection(collection).doc(id).delete();
-  }
-
-  Stream<List<CouponModel>> getAll() {
-    return _db
+  Future<void> updateCoupon(CouponModel coupon) async {
+    await _firestore
         .collection(collection)
-        .orderBy('updatedAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => CouponModel.fromMap(doc.data(), doc.id))
-              .toList(),
-        );
+        .doc(coupon.id)
+        .update(coupon.toMap());
+  }
+
+  Future<void> deleteCoupon(String id) async {
+    await _firestore.collection(collection).doc(id).delete();
   }
 }
