@@ -1,104 +1,110 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:map_web_6451071035_6451071010/data/models/attribute_model.dart';
+import 'package:map_web_6451071035_6451071010/data/models/brand_model.dart';
+import 'package:map_web_6451071035_6451071010/data/models/category_model.dart';
+import 'package:map_web_6451071035_6451071010/data/services/attribute_service.dart';
+import 'package:map_web_6451071035_6451071010/data/services/brand_service.dart';
+import 'package:map_web_6451071035_6451071010/data/services/category_service.dart';
 
 import '../data/models/product_model.dart';
 import '../data/services/product_service.dart';
 
 class ProductController extends ChangeNotifier {
-  ProductController({ProductService? service})
-    : _service = service ?? ProductService();
+  final ProductService productService = ProductService();
+  final BrandService brandService = BrandService();
+  final CategoryService categoryService = CategoryService();
+  final AttributeService attributeService = AttributeService();
+  StreamSubscription? _subscription;
 
-  final ProductService _service;
+  List<BrandModel> brands = [];
+  List<CategoryModel> categories = [];
+  List<AttributeModel> attributes = [];
 
-  List<ProductModel> _allData = [];
-  List<ProductModel> _filteredData = [];
-  String _searchText = '';
+  Future<void> loadInitialData() async {
+    brands = await brandService.getAllBrands();
+    categories = await categoryService.getCategories();
+    attributes = await attributeService.getAll().first;
+    notifyListeners();
+  }
+
+  Future<void> save(ProductModel model, {bool isUpdate = false}) async {
+    if (isUpdate) {
+      await productService.update(model);
+    } else {
+      await productService.create(model);
+    }
+  }
+
+  List<ProductModel> allProducts = [];
+  List<ProductModel> filteredProducts = [];
 
   int currentPage = 0;
-  int rowsPerPage = 5;
+  int rowsPerPage = 10;
 
-  int get totalCount => _allData.length;
-  int get featuredCount => _allData.where((item) => item.isFeatured).length;
-  int get activeCount =>
-      _allData.where((item) => item.status == 'published').length;
-  int get filteredCount => _filteredData.length;
-  int get totalPages =>
-      _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
-  bool get hasPreviousPage => currentPage > 0;
-  bool get hasNextPage => currentPage < totalPages - 1;
+  void setData(List<ProductModel> data) {
+    if (allProducts.length == data.length) return;
+
+    allProducts = data.where((e) => e.isDeleted == false).toList();
+    filteredProducts = allProducts;
+
+    notifyListeners();
+  }
+
+  ProductController() {
+    _listenProducts();
+  }
+  void _listenProducts() {
+    _subscription = productService.getAll().listen((data) {
+      allProducts = data.where((e) => !e.isDeleted).toList();
+      filteredProducts = allProducts;
+      notifyListeners();
+    });
+  }
+
+  void search(String keyword) {
+    if (keyword.isEmpty) {
+      filteredProducts = allProducts;
+    } else {
+      filteredProducts = allProducts
+          .where((e) => e.title.toLowerCase().contains(keyword.toLowerCase()))
+          .toList();
+    }
+    currentPage = 0;
+    notifyListeners();
+  }
 
   List<ProductModel> get paginatedData {
-    if (_filteredData.isEmpty) {
-      return [];
-    }
-
     final start = currentPage * rowsPerPage;
     final end = start + rowsPerPage;
-    return _filteredData.sublist(
+    return filteredProducts.sublist(
       start,
-      end > _filteredData.length ? _filteredData.length : end,
+      end > filteredProducts.length ? filteredProducts.length : end,
     );
   }
 
-  void setData(List<ProductModel> data) {
-    _allData = data;
-    _applyFilter(notify: true);
-  }
+  int get totalPages => filteredProducts.isEmpty
+      ? 1
+      : (filteredProducts.length / rowsPerPage).ceil();
 
-  void search(String value) {
-    _searchText = value.trim().toLowerCase();
-    currentPage = 0;
-    _applyFilter(notify: true);
+  void nextPage() {
+    if (currentPage < totalPages - 1) {
+      currentPage++;
+      notifyListeners();
+    }
   }
 
   void previousPage() {
-    if (!hasPreviousPage) {
-      return;
-    }
-    currentPage--;
-    notifyListeners();
-  }
-
-  void nextPage() {
-    if (!hasNextPage) {
-      return;
-    }
-    currentPage++;
-    notifyListeners();
-  }
-
-  Future<void> create(ProductModel model) async {
-    await _service.create(model);
-  }
-
-  Future<void> update(ProductModel model) async {
-    await _service.update(model);
-  }
-
-  Future<void> delete(String id) async {
-    await _service.delete(id);
-  }
-
-  void _applyFilter({required bool notify}) {
-    if (_searchText.isEmpty) {
-      _filteredData = List<ProductModel>.from(_allData);
-    } else {
-      _filteredData = _allData.where((item) {
-        return item.title.toLowerCase().contains(_searchText) ||
-            item.sku.toLowerCase().contains(_searchText) ||
-            item.brand.toLowerCase().contains(_searchText) ||
-            item.category.toLowerCase().contains(_searchText);
-      }).toList();
-    }
-
-    if (currentPage >= totalPages) {
-      currentPage = totalPages - 1;
-    }
-    if (currentPage < 0) {
-      currentPage = 0;
-    }
-
-    if (notify) {
+    if (currentPage > 0) {
+      currentPage--;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

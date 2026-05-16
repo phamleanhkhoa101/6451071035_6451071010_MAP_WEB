@@ -1,73 +1,60 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ProductReviewModel {
-  ProductReviewModel({
+class ReviewModel {
+  final String id;
+  final String productId;
+  final String productName;
+  final String productImage;
+
+  final String title;
+  final String userId;
+  final String userName;
+  final String? userProfileImage;
+
+  final double rating;
+  final String reviewText;
+  final List<String> mediaUrls;
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  final bool isApproved;
+
+  ReviewModel({
     required this.id,
+    required this.productId,
     required this.productName,
-    required this.customerName,
-    required this.comment,
+    required this.productImage,
+    required this.userId,
+    required this.userName,
+    required this.title,
+    this.userProfileImage,
     required this.rating,
-    required this.status,
-    this.createdAt,
-    this.updatedAt,
+    required this.reviewText,
+    required this.mediaUrls,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isApproved,
   });
 
-  final String id;
-  final String productName;
-  final String customerName;
-  final String comment;
-  final int rating;
-  final String status;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  factory ReviewModel.fromSnapshot(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
-  factory ProductReviewModel.fromMap(Map<String, dynamic> map, String id) {
-    return ProductReviewModel(
-      id: id,
-      productName: map['productName'] ?? '',
-      customerName: map['customerName'] ?? '',
-      comment: map['comment'] ?? '',
-      rating: _toInt(map['rating']),
-      status: map['status'] ?? 'pending',
-      createdAt: _toDate(map['createdAt']),
-      updatedAt: _toDate(map['updatedAt']),
+    return ReviewModel(
+      id: doc.id,
+      productId: data['productId'] ?? '',
+      productName: data['productName'] ?? '',
+      productImage: data['productImage'] ?? '',
+      userId: data['userId'] ?? '',
+      userName: data['userName'] ?? data['customerName'] ?? '',
+      title: data['title'] ?? data['productName'] ?? '',
+      userProfileImage: data['userProfileImage'],
+      rating: (data['rating'] ?? 0).toDouble(),
+      reviewText: data['reviewText'] ?? data['comment'] ?? '',
+      mediaUrls: List<String>.from(data['mediaUrls'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isApproved: data['isApproved'] ?? (data['status'] == 'approved'),
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'productName': productName,
-      'customerName': customerName,
-      'comment': comment,
-      'rating': rating,
-      'status': status,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-  }
-
-  static DateTime? _toDate(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is int) {
-      return DateTime.fromMillisecondsSinceEpoch(value);
-    }
-    if (value is String && value.trim().isNotEmpty) {
-      return DateTime.tryParse(value);
-    }
-    return null;
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is num) {
-      return value.toInt();
-    }
-    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

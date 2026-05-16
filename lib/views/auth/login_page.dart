@@ -11,190 +11,210 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
   bool _isObscure = true;
-  bool _isSubmitting = false;
-
-  @override
-  void dispose() {
-    usernameController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final auth = context.read<AuthController>();
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    final success = await auth.login(
-      usernameController.text.trim(),
-      passwordController.text,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = false;
-    });
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Wrong username or password. Use admin / 123@456.'),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<AuthController>();
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        // Modern gradient background
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0D47A1), Color(0xFF26A69A)],
+            colors: [Colors.blue.shade900, Colors.teal.shade400],
           ),
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: TweenAnimationBuilder<double>(
+            child: TweenAnimationBuilder(
               duration: const Duration(milliseconds: 800),
-              tween: Tween(begin: 0, end: 1),
-              builder: (context, value, child) {
+              tween: Tween<double>(begin: 0, end: 1),
+              curve: Curves.easeOutCubic,
+              builder: (context, double value, child) {
                 return Opacity(
                   opacity: value,
                   child: Transform.translate(
-                    offset: Offset(0, 40 * (1 - value)),
+                    offset: Offset(0, 50 * (1 - value)),
                     child: child,
                   ),
                 );
               },
               child: Container(
-                width: 380,
-                padding: const EdgeInsets.all(32),
+                width: 420,
+                padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.94),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: const [
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x22000000),
+                      color: Colors.black.withOpacity(0.2),
                       blurRadius: 30,
-                      offset: Offset(0, 16),
+                      offset: const Offset(0, 15),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Logo Container
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE3F2FD),
+                        color: Colors.indigoAccent.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.admin_panel_settings_rounded,
+                        Icons.bolt_rounded,
                         size: 48,
-                        color: Color(0xFF0D47A1),
+                        color: Colors.indigoAccent,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
+
                     const Text(
-                      'ADMIN LOGIN',
+                      "SHOE ADMIN",
                       style: TextStyle(
                         fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                        color: Color(0xFF2D3436),
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Admin system for your phone store web project',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54),
+                      "Đăng nhập hệ thống quản trị",
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 40),
+
+                    // Username Field
                     TextField(
                       controller: usernameController,
-                      decoration: _inputDecoration(
-                        icon: Icons.person_outline,
-                        label: 'Username',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.person_outline,
+                          color: Colors.indigoAccent,
+                        ),
+                        labelText: "Tên đăng nhập",
+                        filled: true,
+                        fillColor: const Color(0xFFF8F9FA),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.indigoAccent,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
+
+                    // Password Field
                     TextField(
                       controller: passwordController,
                       obscureText: _isObscure,
-                      onSubmitted: (_) => _submit(),
-                      decoration: _inputDecoration(
-                        icon: Icons.lock_outline,
-                        label: 'Password',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: Colors.indigoAccent,
+                        ),
                         suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _isObscure = !_isObscure;
-                            });
-                          },
                           icon: Icon(
                             _isObscure
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () =>
+                              setState(() => _isObscure = !_isObscure),
+                        ),
+                        labelText: "Mật khẩu",
+                        filled: true,
+                        fillColor: const Color(0xFFF8F9FA),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.indigoAccent,
+                            width: 1.5,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 32),
+
+                    // Login Button
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
-                      child: FilledButton(
-                        onPressed: _isSubmitting ? null : _submit,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF0D47A1),
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final success = await auth.login(
+                            usernameController.text,
+                            passwordController.text,
+                          );
+
+                          if (!success && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                content: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text("Tài khoản hoặc mật khẩu không đúng!"),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigoAccent,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          "ĐĂNG NHẬP",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
                           ),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.4,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Login'),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FB),
-                        borderRadius: BorderRadius.circular(16),
+                    const SizedBox(height: 20),
+
+                    // Forgot Password
+                    TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.black54,
                       ),
-                      child: const Text(
-                        // 'Default account: admin / 123@456',
-                        '',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: const Text("Quên mật khẩu?"),
                     ),
                   ],
                 ),
@@ -202,24 +222,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required IconData icon,
-    required String label,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      prefixIcon: Icon(icon),
-      suffixIcon: suffixIcon,
-      labelText: label,
-      filled: true,
-      fillColor: const Color(0xFFF4F7FB),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
       ),
     );
   }

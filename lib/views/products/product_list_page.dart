@@ -9,339 +9,278 @@ import '../../data/services/product_service.dart';
 import '../shared/admin_ui.dart';
 import 'product_form_page.dart';
 
-class ProductListPage extends StatefulWidget {
+class ProductListPage extends StatelessWidget {
   const ProductListPage({super.key});
 
   @override
-  State<ProductListPage> createState() => _ProductListPageState();
-}
-
-class _ProductListPageState extends State<ProductListPage> {
-  final ProductService _service = ProductService();
-  StreamSubscription<List<ProductModel>>? _subscription;
-  bool _hasLoaded = false;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = _service.getAll().listen(
-      (data) {
-        if (!mounted) {
-          return;
-        }
-        context.read<ProductController>().setData(data);
-        setState(() {
-          _hasLoaded = true;
-          _errorMessage = null;
-        });
-      },
-      onError: (Object error) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _hasLoaded = true;
-          _errorMessage = error.toString();
-        });
-      },
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ProductController(),
+      child: const Scaffold(
+        backgroundColor: Color(0xFFF5F7FA),
+        body: _ProductListView(),
+      ),
     );
   }
+}
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+class _ProductListView extends StatelessWidget {
+  const _ProductListView();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<ProductController>();
+    final service = ProductService();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Phone Products',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2430),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Manage the product catalog for your phone store.',
-                    style: TextStyle(color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- HEADER ---
+          const Text(
+            "Product Inventory",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1C1E),
             ),
-            FilledButton.icon(
-              onPressed: () => _openForm(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add product'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 360,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'Search by name, SKU, brand or category...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            InfoChip(label: 'Total', value: '${controller.totalCount}'),
-            InfoChip(label: 'Published', value: '${controller.activeCount}'),
-            InfoChip(label: 'Featured', value: '${controller.featuredCount}'),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: AdminSectionCard(child: _buildBody(controller)),
-        ),
-      ],
-    );
-  }
+          ),
+          const SizedBox(height: 24),
 
-  Widget _buildBody(ProductController controller) {
-    if (!_hasLoaded) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Text(
-          'Unable to load products.\n$_errorMessage',
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    if (controller.filteredCount == 0) {
-      return const Center(
-        child: Text('No phone products found. Add your first item to begin.'),
-      );
-    }
-
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFFF1F5F9),
-                ),
-                columnSpacing: 24,
-                horizontalMargin: 12,
-                columns: const [
-                  DataColumn(label: Text('SEQ')),
-                  DataColumn(label: Text('Product')),
-                  DataColumn(label: Text('Category')),
-                  DataColumn(label: Text('Price')),
-                  DataColumn(label: Text('Stock')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Updated')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: List.generate(controller.paginatedData.length, (index) {
-                  final item = controller.paginatedData[index];
-                  final rowNumber =
-                      (controller.currentPage * controller.rowsPerPage) +
-                      index +
-                      1;
-                  return DataRow(
-                    cells: [
-                      DataCell(Text('$rowNumber')),
-                      DataCell(_ProductCell(product: item)),
-                      DataCell(
-                        SizedBox(
-                          width: 180,
-                          child: Text(
-                            item.category.isEmpty ? '--' : item.category,
-                          ),
-                        ),
-                      ),
-                      DataCell(_PriceCell(product: item)),
-                      DataCell(Text('${item.stock}')),
-                      DataCell(
-                        StatusPill(
-                          label: item.status,
-                          color: _statusColor(item.status),
-                        ),
-                      ),
-                      DataCell(Text(formatDate(item.updatedAt))),
-                      DataCell(
-                        SizedBox(
-                          width: 150,
-                          child: Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () =>
-                                    _openForm(context, product: item),
-                                child: const Text('Edit'),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: () => _confirmDelete(context, item),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ),
+          // --- TOOLBAR ---
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
                       ),
                     ],
-                  );
-                }),
+                  ),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: "Search products...",
+                      prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: controller.search,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProductFormPage()),
+                ),
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text("ADD PRODUCT"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 18,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // --- TABLE SECTION (FIXED SCROLL) ---
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: controller.filteredProducts.isEmpty
+                    ? const Center(child: Text("No products found"))
+                    : Scrollbar(
+                        thumbVisibility: true, // Luôn hiện thanh cuộn ngang
+                        thickness: 8,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal, // Cuộn ngang
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical, // Cuộn dọc
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 1100,
+                              ), // ÉP ĐỘ RỘNG BẢNG ĐỂ HIỆN HẾT CỘT
+                              child: DataTable(
+                                headingRowColor: WidgetStateProperty.all(
+                                  const Color(0xFFF8FAFC),
+                                ),
+                                columnSpacing:
+                                    20, // Thu hẹp khoảng cách giữa các cột
+                                columns: const [
+                                  DataColumn(label: Text("SEQ")),
+                                  DataColumn(label: Text("PRODUCT")),
+                                  DataColumn(label: Text("PRICE")),
+                                  DataColumn(label: Text("TYPE")),
+                                  DataColumn(label: Text("STOCK")),
+                                  DataColumn(
+                                    label: Text("CÒN HÀNG"),
+                                  ), // 👈 THÊM
+                                  DataColumn(label: Text("VISIBLE")),
+                                  DataColumn(label: Text("STATUS")),
+                                  DataColumn(label: Text("ACTION")),
+                                ],
+                                rows: List.generate(
+                                  controller.paginatedData.length,
+                                  (index) {
+                                    final item =
+                                        controller.paginatedData[index];
+                                    return DataRow(
+                                      cells: [
+                                        DataCell(Text("${index + 1}")),
+                                        DataCell(
+                                          Row(
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  item.thumbnail,
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      const Icon(
+                                                        Icons.image,
+                                                        size: 40,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              SizedBox(
+                                                width: 150,
+                                                child: Text(
+                                                  item.title,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        DataCell(
+                                          Text(
+                                            "\$${item.price}",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(Text(item.productType.name)),
+                                        DataCell(_buildStockBadge(item.stock)),
+                                        DataCell(
+                                          Icon(
+                                            (item.stock - item.soldQuantity) > 0
+                                                ? Icons.check_circle
+                                                : Icons.cancel,
+                                            color:
+                                                (item.stock -
+                                                        item.soldQuantity) >
+                                                    0
+                                                ? Colors.green
+                                                : Colors.red,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        DataCell(
+                                          _buildVisibilityBadge(item.isDraft),
+                                        ),
+                                        DataCell(
+                                          Icon(
+                                            item.isActive
+                                                ? Icons.check_circle
+                                                : Icons.cancel,
+                                            color: item.isActive
+                                                ? Colors.green
+                                                : Colors.red,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        DataCell(
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.edit,
+                                                  color: Colors.blue,
+                                                ),
+                                                onPressed: () => Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        ProductFormPage(
+                                                          product: item,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed: () =>
+                                                    _showDeleteDialog(
+                                                      context,
+                                                      () => service.delete(
+                                                        item.id,
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Pager(
-          pageText:
-              'Page ${controller.currentPage + 1}/${controller.totalPages}',
-          hasPreviousPage: controller.hasPreviousPage,
-          hasNextPage: controller.hasNextPage,
-          onPrevious: controller.previousPage,
-          onNext: controller.nextPage,
-        ),
-      ],
-    );
-  }
 
-  Future<void> _openForm(
-    BuildContext context, {
-    ProductModel? product,
-  }) async {
-    final model = await showDialog<ProductModel>(
-      context: context,
-      builder: (_) => ProductFormPage(product: product),
-    );
+          const SizedBox(height: 20),
 
-    if (model == null || !context.mounted) {
-      return;
-    }
-
-    final controller = context.read<ProductController>();
-    if (product == null) {
-      await controller.create(model);
-    } else {
-      await controller.update(model);
-    }
-  }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    ProductModel product,
-  ) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete product'),
-        content: Text('Are you sure you want to delete "${product.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
-
-    await context.read<ProductController>().delete(product.id);
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'published':
-        return const Color(0xFF2E7D32);
-      case 'archived':
-        return const Color(0xFFB71C1C);
-      default:
-        return const Color(0xFFEF6C00);
-    }
-  }
-}
-
-class _ProductCell extends StatelessWidget {
-  const _ProductCell({required this.product});
-
-  final ProductModel product;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 320,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 52,
-              height: 52,
-              color: const Color(0xFFE2E8F0),
-              child: product.imageUrl.isEmpty
-                  ? const Icon(Icons.smartphone_rounded)
-                  : Image.network(
-                      product.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.broken_image_outlined),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // --- PAGINATION ---
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  product.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: controller.previousPage,
                 ),
                 Text(
-                  '${product.brand} | ${product.sku}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                  ),
+                  "Page ${controller.currentPage + 1} of ${controller.totalPages}",
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: controller.nextPage,
                 ),
               ],
             ),
@@ -350,36 +289,66 @@ class _ProductCell extends StatelessWidget {
       ),
     );
   }
-}
 
-class _PriceCell extends StatelessWidget {
-  const _PriceCell({required this.product});
-
-  final ProductModel product;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            formatCurrency(product.price),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            product.originalPrice > 0
-                ? formatCurrency(product.originalPrice)
-                : '--',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
-          ),
-        ],
+  Widget _buildStockBadge(int stock) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: stock > 0
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        "$stock In Stock",
+        style: TextStyle(
+          color: stock > 0 ? Colors.green : Colors.red,
+          fontSize: 12,
+        ),
       ),
     );
   }
+
+  Widget _buildVisibilityBadge(bool isDraft) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDraft
+            ? Colors.orange.withOpacity(0.1)
+            : Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        isDraft ? "Draft" : "Published",
+        style: TextStyle(
+          color: isDraft ? Colors.orange : Colors.blue,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showDeleteDialog(BuildContext context, VoidCallback onConfirm) {
+  return showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Confirm Delete"),
+      content: const Text("Are you sure?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () {
+            onConfirm();
+            Navigator.pop(context);
+          },
+          child: const Text("Delete", style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
 }

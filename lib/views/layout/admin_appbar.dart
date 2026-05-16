@@ -9,160 +9,175 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.read<AuthController>();
-    final isCompact = MediaQuery.of(context).size.width < 900;
 
     return AppBar(
       backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
+      elevation: 0, // Bỏ bóng đổ mặc định
       automaticallyImplyLeading: false,
-      leading: isCompact
-          ? Builder(
-              builder: (context) => IconButton(
-                onPressed: Scaffold.of(context).openDrawer,
-                icon: const Icon(Icons.menu_rounded),
-              ),
-            )
-          : null,
-      titleSpacing: isCompact ? 12 : 24,
+      titleSpacing: 24,
+      // Thêm một đường kẻ mảnh ở dưới AppBar
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(color: const Color(0xFFE6ECF2), height: 1),
-      ),
-      title: isCompact
-          ? const Text(
-              'Phone Store Admin',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1B2430),
-              ),
-            )
-          : Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6F8FB),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search phones, orders, customers...',
-                        prefixIcon: Icon(Icons.search_rounded),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                const _Action(icon: Icons.language_rounded, tooltip: 'Language'),
-                const _Action(
-                  icon: Icons.notifications_none_rounded,
-                  tooltip: 'Notifications',
-                ),
-                const _Action(
-                  icon: Icons.settings_outlined,
-                  tooltip: 'Settings',
-                ),
-              ],
-            ),
-      actions: [
-        PopupMenuButton<String>(
-          offset: const Offset(0, 46),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          onSelected: (value) {
-            if (value == 'logout') {
-              auth.logout();
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem<String>(
-              value: 'profile',
-              child: Text('Profile'),
-            ),
-            PopupMenuItem<String>(
-              value: 'security',
-              child: Text('Security'),
-            ),
-            PopupMenuDivider(),
-            PopupMenuItem<String>(
-              value: 'logout',
-              child: Text('Logout'),
-            ),
-          ],
-          child: const Padding(
-            padding: EdgeInsets.only(right: 20),
-            child: Row(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'User Admin',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1B2430),
-                      ),
-                    ),
-                    Text(
-                      'Phone manager',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF1976D2),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(width: 10),
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Color(0xFF1976D2),
-                  child: Text(
-                    'UA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Icon(Icons.arrow_drop_down_rounded, color: Colors.black45),
-              ],
-            ),
-          ),
+        preferredSize: const Size.fromHeight(1.0),
+        child: Container(
+          color: Colors.grey.withValues(alpha: 0.2),
+          height: 1.0,
         ),
-      ],
+      ),
+      title: Row(
+        children: [
+          /// SEARCH BAR - Làm bo tròn và chuyên nghiệp hơn
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Tìm kiếm hệ thống...",
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ),
+
+          const Spacer(flex: 1), // Tạo khoảng trống giữa search và icons
+          ///ACTIONS GROUP
+          _buildActionButton(Icons.language, "Ngôn ngữ", () {}),
+          _buildActionButton(
+            Icons.notifications_none_outlined,
+            "Thông báo",
+            () {},
+          ),
+          _buildActionButton(Icons.shopping_cart_outlined, "Đơn hàng", () {}),
+          _buildActionButton(Icons.settings_outlined, "Cài đặt", () {}),
+
+          const VerticalDivider(indent: 15, endIndent: 15, width: 40),
+
+          /// USER INFO SECTION
+          PopupMenuButton<String>(
+            offset: const Offset(0, 55),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Row(
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "User Admin",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        "Quản trị viên",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.blue,
+                      child: Text(
+                        "UA",
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                ],
+              ),
+            ),
+            itemBuilder: (context) => [
+              _buildPopupItem(
+                "profile",
+                Icons.person_outline,
+                "Thông tin cá nhân",
+              ),
+              _buildPopupItem("settings", Icons.security, "Bảo mật"),
+              const PopupMenuDivider(),
+              _buildPopupItem(
+                "logout",
+                Icons.logout,
+                "Đăng xuất",
+                color: Colors.red,
+              ),
+            ],
+            onSelected: (value) {
+              if (value == "logout") {
+                auth.logout();
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  Size get preferredSize => const Size.fromHeight(65);
-}
-
-class _Action extends StatelessWidget {
-  const _Action({required this.icon, required this.tooltip});
-
-  final IconData icon;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
+  /// Widget bổ trợ tạo Icon Button đẹp hơn
+  Widget _buildActionButton(IconData icon, String tooltip, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Tooltip(
         message: tooltip,
         child: IconButton(
-          onPressed: () {},
-          icon: Icon(icon, color: const Color(0xFF475569)),
+          onPressed: onTap,
+          icon: Icon(icon, color: Colors.black54, size: 22),
+          hoverColor: Colors.blue.withValues(alpha: 0.05),
+          splashRadius: 22,
         ),
       ),
     );
   }
+
+  /// Widget bổ trợ tạo Item Menu đẹp hơn
+  PopupMenuItem<String> _buildPopupItem(
+    String value,
+    IconData icon,
+    String title, {
+    Color? color,
+  }) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color ?? Colors.black54),
+          const SizedBox(width: 12),
+          Text(title, style: TextStyle(color: color, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(65); // Tăng chiều cao lên một chút cho thoáng
 }

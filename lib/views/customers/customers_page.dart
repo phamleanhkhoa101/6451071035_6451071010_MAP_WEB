@@ -9,465 +9,475 @@ import '../../data/services/customer_service.dart';
 import '../shared/admin_ui.dart';
 import 'customer_detail_page.dart';
 
-class CustomersPage extends StatefulWidget {
+class CustomersPage extends StatelessWidget {
   const CustomersPage({super.key});
 
   @override
-  State<CustomersPage> createState() => _CustomersPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CustomerController()..fetchCustomers(),
+      child: const Scaffold(
+        backgroundColor: Color(0xFFF8F9FD),
+        body: _CustomersView(),
+      ),
+    );
+  }
 }
 
-class _CustomersPageState extends State<CustomersPage> {
-  final CustomerService _service = CustomerService();
-  StreamSubscription<List<CustomerModel>>? _subscription;
-  bool _hasLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = _service.getAll().listen((data) {
-      if (!mounted) {
-        return;
-      }
-      context.read<CustomerController>().setData(data);
-      setState(() {
-        _hasLoaded = true;
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+class _CustomersView extends StatelessWidget {
+  const _CustomersView();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CustomerController>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Customers',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2430),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Manage buyer profiles and loyalty tiers.',
-                    style: TextStyle(color: Color(0xFF64748B)),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ===== HEADER =====
+          const Text(
+            "Customer Management",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2B3674),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ===== SEARCH BAR =====
+          Container(
+            width: 400,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: "Search by name, email or phone...",
+                hintStyle: TextStyle(color: Color(0xFFA3AED0), fontSize: 14),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF4318FF),
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 15),
+              ),
+              onChanged: (value) {
+                controller.search(value);
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ===== TABLE AREA =====
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-            ),
-            FilledButton.icon(
-              onPressed: () => _openForm(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add customer'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 360,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'Search by name, email, phone or city...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            InfoChip(label: 'Total', value: '${controller.totalCount}'),
-            InfoChip(label: 'VIP', value: '${controller.vipCount}'),
-            InfoChip(label: 'Active', value: '${controller.activeCount}'),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(child: AdminSectionCard(child: _buildBody(controller))),
-      ],
-    );
-  }
+              child: controller.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.vertical,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: DataTable(
+                                  headingRowHeight: 56,
+                                  dataRowMaxHeight: 70,
+                                  columnSpacing: 32,
+                                  headingRowColor: MaterialStateProperty.all(
+                                    const Color(0xFFF4F7FE),
+                                  ),
+                                  columns: const [
+                                    DataColumn(label: _TableLabel("SEQ")),
+                                    DataColumn(label: _TableLabel("CUSTOMER")),
+                                    DataColumn(label: _TableLabel("EMAIL")),
+                                    DataColumn(label: _TableLabel("PHONE")),
+                                    DataColumn(label: _TableLabel("ORDERS")),
+                                    DataColumn(
+                                      label: _TableLabel("REGISTER DATE"),
+                                    ),
+                                    DataColumn(label: _TableLabel("ACTION")),
+                                  ],
+                                  rows: controller.paginatedData.asMap().entries.map((
+                                    entry,
+                                  ) {
+                                    final index = entry.key;
+                                    final c = entry.value;
+                                    final seq =
+                                        (controller.currentPage - 1) *
+                                            controller.rowsPerPage +
+                                        index +
+                                        1;
 
-  Widget _buildBody(CustomerController controller) {
-    if (!_hasLoaded) {
-      return const Center(child: CircularProgressIndicator());
-    }
+                                    return DataRow(
+                                      cells: [
+                                        // SEQ
+                                        DataCell(
+                                          Text(
+                                            "$seq",
+                                            style: const TextStyle(
+                                              color: Color(0xFFA3AED0),
+                                            ),
+                                          ),
+                                        ),
 
-    if (controller.filteredCount == 0) {
-      return const Center(
-        child: Text('No customers found. Add a customer profile to begin.'),
-      );
-    }
+                                        // CUSTOMER (Name with Avatar)
+                                        DataCell(
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 16,
+                                                backgroundColor: const Color(
+                                                  0xFF4318FF,
+                                                ).withOpacity(0.1),
+                                                child: Text(
+                                                  c.firstName[0].toUpperCase(),
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF4318FF),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                "${c.firstName} ${c.lastName}",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF2B3674),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFFF1F5F9),
-                ),
-                columnSpacing: 24,
-                horizontalMargin: 12,
-                columns: const [
-                  DataColumn(label: Text('SEQ')),
-                  DataColumn(label: Text('Customer')),
-                  DataColumn(label: Text('Contact')),
-                  DataColumn(label: Text('Tier')),
-                  DataColumn(label: Text('Orders')),
-                  DataColumn(label: Text('Spent')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Joined')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: List.generate(controller.paginatedData.length, (index) {
-                  final item = controller.paginatedData[index];
-                  final rowNumber =
-                      (controller.currentPage * controller.rowsPerPage) +
-                      index +
-                      1;
-                  return DataRow(
-                    cells: [
-                      DataCell(Text('$rowNumber')),
-                      DataCell(
-                        SizedBox(
-                          width: 220,
-                          child: Text(
-                            item.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 220,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.email),
-                              Text(
-                                item.phone,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
+                                        // EMAIL
+                                        DataCell(
+                                          Text(
+                                            c.email,
+                                            style: const TextStyle(
+                                              color: Color(0xFF1B2559),
+                                            ),
+                                          ),
+                                        ),
+
+                                        // PHONE
+                                        DataCell(
+                                          Text(
+                                            c.phone,
+                                            style: const TextStyle(
+                                              color: Color(0xFF1B2559),
+                                            ),
+                                          ),
+                                        ),
+
+                                        // ORDERS
+                                        DataCell(
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              "${controller.orderCountMap[c.id] ?? 0}",
+                                              style: const TextStyle(
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+
+                                        // REGISTER DATE
+                                        DataCell(
+                                          Text(
+                                            c.createdAt != null
+                                                ? "${c.createdAt!.day}/${c.createdAt!.month}/${c.createdAt!.year}"
+                                                : "-",
+                                            style: const TextStyle(
+                                              color: Color(0xFFA3AED0),
+                                            ),
+                                          ),
+                                        ),
+
+                                        // ACTION
+                                        DataCell(
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _CircularActionButton(
+                                                icon: Icons.visibility_rounded,
+                                                color: const Color(0xFF4318FF),
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          CustomerDetailPage(
+                                                            customer: c,
+                                                          ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              const SizedBox(width: 8),
+                                              _CircularActionButton(
+                                                icon: Icons
+                                                    .delete_outline_rounded,
+                                                color: Colors.red,
+                                                onPressed: () => _confirmDelete(
+                                                  context,
+                                                  c.id,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      DataCell(Text(item.tier)),
-                      DataCell(Text('${item.totalOrders}')),
-                      DataCell(Text(formatCurrency(item.totalSpent))),
-                      DataCell(
-                        StatusPill(
-                          label: item.status,
-                          color: item.status == 'active'
-                              ? const Color(0xFF2E7D32)
-                              : const Color(0xFFB71C1C),
-                        ),
-                      ),
-                      DataCell(Text(formatDate(item.createdAt))),
-                      DataCell(
-                        SizedBox(
-                          width: 270,
-                          child: Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => _showDetails(context, item),
-                                child: const Text('Details'),
-                              ),
-                              const SizedBox(width: 8),
-                              FilledButton.tonal(
-                                onPressed: () =>
-                                    _openForm(context, customer: item),
-                                child: const Text('Edit'),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: () => _confirmDelete(context, item),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
+                    ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Pager(
-          pageText:
-              'Page ${controller.currentPage + 1}/${controller.totalPages}',
-          hasPreviousPage: controller.hasPreviousPage,
-          hasNextPage: controller.hasNextPage,
-          onPrevious: controller.previousPage,
-          onNext: controller.nextPage,
-        ),
-      ],
-    );
-  }
 
-  Future<void> _showDetails(
-    BuildContext context,
-    CustomerModel customer,
-  ) async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => CustomerDetailPage(customer: customer),
-    );
-  }
+          const SizedBox(height: 24),
 
-  Future<void> _openForm(
-    BuildContext context, {
-    CustomerModel? customer,
-  }) async {
-    final nameController = TextEditingController(
-      text: customer?.fullName ?? '',
-    );
-    final emailController = TextEditingController(text: customer?.email ?? '');
-    final phoneController = TextEditingController(text: customer?.phone ?? '');
-    final cityController = TextEditingController(text: customer?.city ?? '');
-    final ordersController = TextEditingController(
-      text: customer == null ? '' : '${customer.totalOrders}',
-    );
-    final spentController = TextEditingController(
-      text: customer == null ? '' : customer.totalSpent.toStringAsFixed(0),
-    );
-    var tier = customer?.tier ?? 'standard';
-    var status = customer?.status ?? 'active';
+          // ===== PAGINATION =====
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(controller.totalPages, (index) {
+              final page = index + 1;
+              final isCurrent = controller.currentPage == page;
 
-    final model = await showDialog<CustomerModel>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: Text(customer == null ? 'Add customer' : 'Edit customer'),
-          content: SizedBox(
-            width: 520,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Full name'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: emailController,
-                          decoration: const InputDecoration(labelText: 'Email'),
-                        ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  onTap: () => controller.changePage(page),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isCurrent ? const Color(0xFF4318FF) : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: isCurrent
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF4318FF).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                      border: Border.all(
+                        color: isCurrent
+                            ? const Color(0xFF4318FF)
+                            : const Color(0xFFE0E5F2),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: phoneController,
-                          decoration: const InputDecoration(labelText: 'Phone'),
-                        ),
+                    ),
+                    child: Text(
+                      "$page",
+                      style: TextStyle(
+                        color: isCurrent
+                            ? Colors.white
+                            : const Color(0xFF2B3674),
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: cityController,
-                    decoration: const InputDecoration(labelText: 'City'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: tier,
-                          decoration: const InputDecoration(labelText: 'Tier'),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'standard',
-                              child: Text('Standard'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'vip',
-                              child: Text('VIP'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'wholesale',
-                              child: Text('Wholesale'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => tier = value);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: status,
-                          decoration: const InputDecoration(labelText: 'Status'),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'active',
-                              child: Text('Active'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'inactive',
-                              child: Text('Inactive'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => status = value);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: ordersController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Total orders',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: spentController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Total spent',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final fullName = nameController.text.trim();
-                if (fullName.isEmpty) {
-                  return;
-                }
-
-                Navigator.of(dialogContext).pop(
-                  CustomerModel(
-                    id: customer?.id ?? '',
-                    fullName: fullName,
-                    email: emailController.text.trim(),
-                    phone: phoneController.text.trim(),
-                    city: cityController.text.trim(),
-                    tier: tier,
-                    status: status,
-                    totalOrders:
-                        int.tryParse(ordersController.text.trim()) ?? 0,
-                    totalSpent:
-                        double.tryParse(spentController.text.trim()) ?? 0,
-                    createdAt: customer?.createdAt ?? DateTime.now(),
-                    updatedAt: DateTime.now(),
-                  ),
-                );
-              },
-              child: Text(customer == null ? 'Create' : 'Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    nameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    cityController.dispose();
-    ordersController.dispose();
-    spentController.dispose();
-
-    if (model == null || !context.mounted) {
-      return;
-    }
-
-    final controller = context.read<CustomerController>();
-    if (customer == null) {
-      await controller.create(model);
-    } else {
-      await controller.update(model);
-    }
-  }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    CustomerModel customer,
-  ) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete customer'),
-        content: Text(
-          'Are you sure you want to delete "${customer.fullName}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
+                ),
+              );
+            }),
           ),
         ],
       ),
     );
+  }
 
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
+  // ===== DETAIL DIALOG =====
+  void _showDetail(BuildContext context, CustomerModel customer) async {
+    final controller = context.read<CustomerController>();
+    final orders = await controller.getOrders(customer.id);
 
-    await context.read<CustomerController>().delete(customer.id);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          "Orders of ${customer.firstName}",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2B3674),
+          ),
+        ),
+        content: SizedBox(
+          width: 500,
+          child: orders.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text("No orders found.", textAlign: TextAlign.center),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: orders.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final order = orders[i];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFF4F7FE),
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          color: Color(0xFF4318FF),
+                        ),
+                      ),
+                      title: Text(
+                        "Order ID: ${order['id'] ?? ''}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text("Total: ${order['totalAmount'] ?? 0}"),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                    );
+                  },
+                ),
+        ),
+        actionsPadding: const EdgeInsets.all(16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Close",
+              style: TextStyle(color: Color(0xFFA3AED0)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== DELETE CONFIRM =====
+  void _confirmDelete(BuildContext context, String id) {
+    final controller = context.read<CustomerController>();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Delete Customer?"),
+        content: const Text(
+          "This action cannot be undone. Are you sure you want to remove this customer?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              await controller.delete(id);
+              Navigator.pop(context);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// --- SUPPORTING WIDGETS ---
+
+class _TableLabel extends StatelessWidget {
+  final String label;
+  const _TableLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: Color(0xFFA3AED0),
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+      ),
+    );
+  }
+}
+
+class _CircularActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _CircularActionButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withOpacity(0.08),
+      shape: const CircleBorder(),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 18),
+        onPressed: onPressed,
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        padding: EdgeInsets.zero,
+        hoverColor: color.withOpacity(0.15),
+      ),
+    );
   }
 }

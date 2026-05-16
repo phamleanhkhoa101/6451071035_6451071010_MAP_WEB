@@ -3,22 +3,13 @@ import 'package:flutter/material.dart';
 import '../data/services/auth_service.dart';
 
 class AuthController extends ChangeNotifier {
-  AuthController({AuthService? service}) : _service = service ?? AuthService();
-
-  final AuthService _service;
+  final AuthService _service = AuthService();
 
   bool _isLoggedIn = false;
-  bool _isCheckingLogin = true;
-
   bool get isLoggedIn => _isLoggedIn;
-  bool get isCheckingLogin => _isCheckingLogin;
 
   Future<void> checkLogin() async {
-    _isCheckingLogin = true;
-    notifyListeners();
-
     _isLoggedIn = await _service.isLoggedIn();
-    _isCheckingLogin = false;
     notifyListeners();
   }
 

@@ -18,7 +18,13 @@ class AttributeController extends ChangeNotifier {
 
   int get totalCount => _allData.length;
   int get filteredCount => _filteredData.length;
-  int get totalPages => _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
+  int get activeCount => _allData.where((item) => item.isActive).length;
+  int get searchableCount => _allData.where((item) => item.isSearchable).length;
+  int get filterableCount => _allData.where((item) => item.isFilterable).length;
+  int get colorAttributeCount =>
+      _allData.where((item) => item.isColorAttribute).length;
+  int get totalPages =>
+      _filteredData.isEmpty ? 1 : (_filteredData.length / rowsPerPage).ceil();
   bool get hasPreviousPage => currentPage > 0;
   bool get hasNextPage => currentPage < totalPages - 1;
 

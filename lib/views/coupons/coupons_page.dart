@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,577 +6,475 @@ import 'package:provider/provider.dart';
 import '../../controllers/coupon_controller.dart';
 import '../../data/models/coupon_model.dart';
 import '../../data/services/coupon_service.dart';
+import '../shared/admin_ui.dart';
 
-class CouponsPage extends StatefulWidget {
+class CouponsPage extends StatelessWidget {
   const CouponsPage({super.key});
 
   @override
-  State<CouponsPage> createState() => _CouponsPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CouponController()..fetchCoupons(),
+      child: const Scaffold(
+        backgroundColor: Color(0xFFF8F9FD),
+        body: _CouponsView(),
+      ),
+    );
+  }
 }
 
-class _CouponsPageState extends State<CouponsPage> {
-  final CouponService _service = CouponService();
-  StreamSubscription<List<CouponModel>>? _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = _service.getAll().listen((data) {
-      if (!mounted) {
-        return;
-      }
-      context.read<CouponController>().setData(data);
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+class _CouponsView extends StatelessWidget {
+  const _CouponsView();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CouponController>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Coupons',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B2430),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () => _showDialog(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('ThĂªm mĂ£'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 360,
-              child: TextField(
-                onChanged: controller.search,
-                decoration: InputDecoration(
-                  hintText: 'TĂ¬m theo mĂ£ hoáº·c mĂ´ táº£...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// --- TOP BAR ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Coupon Management",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2B3674),
                 ),
               ),
-            ),
-            _InfoChip(label: 'Tá»•ng sá»‘', value: '${controller.totalCount}'),
-            _InfoChip(label: 'Hiá»ƒn thá»‹', value: '${controller.filteredCount}'),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
+              ElevatedButton.icon(
+                onPressed: () => _showDialog(context),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text("ADD COUPON"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4318FF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 18,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          /// --- SEARCH FIELD ---
+          Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: controller.filteredCount == 0
-                ? const Center(child: Text('ChÆ°a cĂ³ mĂ£ giáº£m giĂ¡ nĂ o Ä‘á»ƒ hiá»ƒn thá»‹.'))
-                : Column(
-                    children: [
-                      Expanded(
+            child: TextField(
+              onChanged: controller.search,
+              decoration: const InputDecoration(
+                hintText: "Search coupon code...",
+                prefixIcon: Icon(Icons.search, color: Color(0xFF4318FF)),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          /// --- DATA TABLE AREA ---
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: controller.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            headingRowColor: WidgetStateProperty.all(
-                              const Color(0xFFF1F5F9),
-                            ),
+                            headingRowHeight: 56,
+                            dataRowMaxHeight: 64,
                             columnSpacing: 24,
-                            horizontalMargin: 12,
+                            headingRowColor: MaterialStateProperty.all(
+                              const Color(0xFFF4F7FE),
+                            ),
                             columns: const [
-                              DataColumn(label: Text('SEQ')),
-                              DataColumn(label: Text('MĂ£')),
-                              DataColumn(label: Text('Giáº£m')),
-                              DataColumn(label: Text('ÄÆ¡n tá»‘i thiá»ƒu')),
-                              DataColumn(label: Text('LÆ°á»£t dĂ¹ng')),
-                              DataColumn(label: Text('Háº¡n dĂ¹ng')),
-                              DataColumn(label: Text('Tráº¡ng thĂ¡i')),
-                              DataColumn(label: Text('Thao tĂ¡c')),
+                              DataColumn(label: _TableLabel("SEQ")),
+                              DataColumn(label: _TableLabel("COUPON")),
+                              DataColumn(label: _TableLabel("DISCOUNT VALUE")),
+                              DataColumn(label: _TableLabel("TYPE")),
+                              DataColumn(label: _TableLabel("DESCRIPTION")),
+                              DataColumn(label: _TableLabel("IS ACTIVE")),
+                              DataColumn(label: _TableLabel("START DATE")),
+                              DataColumn(label: _TableLabel("END DATE")),
+                              DataColumn(label: _TableLabel("ACTION")),
                             ],
-                            rows: List.generate(controller.paginatedData.length, (
-                              index,
+                            rows: controller.paginatedData.asMap().entries.map((
+                              entry,
                             ) {
-                              final item = controller.paginatedData[index];
-                              final rowNumber =
-                                  (controller.currentPage *
-                                      controller.rowsPerPage) +
+                              final index = entry.key;
+                              final c = entry.value;
+                              final seq =
+                                  (controller.currentPage - 1) *
+                                      controller.rowsPerPage +
                                   index +
                                   1;
+
                               return DataRow(
                                 cells: [
-                                  DataCell(Text('$rowNumber')),
-                                  DataCell(_CouponCodeCell(coupon: item)),
-                                  DataCell(Text(_formatDiscount(item))),
-                                  DataCell(Text(_formatMoney(item.minOrderValue))),
+                                  // SEQ
                                   DataCell(
-                                    Text('${item.usedCount}/${item.usageLimit}'),
+                                    Text(
+                                      "$seq",
+                                      style: const TextStyle(
+                                        color: Color(0xFFA3AED0),
+                                      ),
+                                    ),
                                   ),
-                                  DataCell(Text(_formatDate(item.endDate))),
-                                  DataCell(_StatusBadge(active: item.isActive)),
+
+                                  // COUPON
                                   DataCell(
-                                    Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: () =>
-                                              _showDialog(context, coupon: item),
-                                          child: const Text('Sá»­a'),
+                                    Text(
+                                      c.code,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2B3674),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // DISCOUNT VALUE
+                                  DataCell(
+                                    Text(
+                                      c.discountType == DiscountType.percentage
+                                          ? "${c.discountValue}%"
+                                          : "${c.discountValue.toStringAsFixed(0)} đ",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+
+                                  // TYPE
+                                  DataCell(
+                                    Text(
+                                      c.discountType == DiscountType.percentage
+                                          ? "Percentage"
+                                          : "Flat",
+                                    ),
+                                  ),
+
+                                  // DESCRIPTION
+                                  DataCell(
+                                    SizedBox(
+                                      width: 180,
+                                      child: Text(
+                                        c.description,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.blueGrey,
                                         ),
-                                        TextButton(
+                                      ),
+                                    ),
+                                  ),
+
+                                  // IS ACTIVE
+                                  DataCell(_StatusBadge(isActive: c.isActive)),
+
+                                  // START DATE
+                                  DataCell(
+                                    Text(
+                                      c.startDate != null
+                                          ? "${c.startDate!.day}/${c.startDate!.month}/${c.startDate!.year}"
+                                          : "-",
+                                    ),
+                                  ),
+
+                                  // END DATE
+                                  DataCell(
+                                    Text(
+                                      c.endDate != null
+                                          ? "${c.endDate!.day}/${c.endDate!.month}/${c.endDate!.year}"
+                                          : "-",
+                                    ),
+                                  ),
+
+                                  // ACTION
+                                  DataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+
+                                      children: [
+                                        _CircularActionButton(
+                                          icon: Icons.edit_rounded,
+                                          color: Colors.blue,
                                           onPressed: () =>
-                                              _confirmDelete(context, item),
-                                          child: const Text('XĂ³a'),
+                                              _showDialog(context, coupon: c),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _CircularActionButton(
+                                          icon: Icons.delete_outline_rounded,
+                                          color: Colors.red,
+                                          onPressed: () =>
+                                              controller.delete(c.id),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               );
-                            }),
+                            }).toList(),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _Pager(
-                        pageText:
-                            'Trang ${controller.currentPage + 1}/${controller.totalPages}',
-                        hasPreviousPage: controller.hasPreviousPage,
-                        hasNextPage: controller.hasNextPage,
-                        onPrevious: controller.previousPage,
-                        onNext: controller.nextPage,
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, CouponModel coupon) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('XĂ³a mĂ£ giáº£m giĂ¡'),
-        content: Text('Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a "${coupon.code}" khĂ´ng?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Há»§y'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('XĂ³a'),
+                    ),
+            ),
           ),
         ],
       ),
     );
-
-    if (shouldDelete != true || !context.mounted) {
-      return;
-    }
-
-    await context.read<CouponController>().delete(coupon.id);
   }
 
   void _showDialog(BuildContext context, {CouponModel? coupon}) {
-    final codeController = TextEditingController(text: coupon?.code ?? '');
-    final descriptionController = TextEditingController(
-      text: coupon?.description ?? '',
-    );
-    final discountController = TextEditingController(
-      text: _numberText(coupon?.discountValue ?? 0),
-    );
-    final minOrderController = TextEditingController(
-      text: _numberText(coupon?.minOrderValue ?? 0),
-    );
-    final maxDiscountController = TextEditingController(
-      text: _numberText(coupon?.maxDiscountValue ?? 0),
-    );
-    final usageLimitController = TextEditingController(
-      text: '${coupon?.usageLimit ?? 0}',
-    );
-    final usedCountController = TextEditingController(
-      text: '${coupon?.usedCount ?? 0}',
-    );
-    var discountType = coupon?.discountType ?? 'percent';
-    var isActive = coupon?.isActive ?? true;
-    DateTime? startDate = coupon?.startDate;
-    DateTime? endDate = coupon?.endDate;
+    final controller = context.read<CouponController>();
 
-    showDialog<void>(
+    final codeController = TextEditingController(text: coupon?.code ?? "");
+    final descController = TextEditingController(
+      text: coupon?.description ?? "",
+    );
+    final valueController = TextEditingController(
+      text: coupon?.discountValue.toString() ?? "",
+    );
+
+    DiscountType type = coupon?.discountType ?? DiscountType.percentage;
+    bool isActive = coupon?.isActive ?? true;
+
+    showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: Text(coupon == null ? 'ThĂªm mĂ£ giáº£m giĂ¡' : 'Cáº­p nháº­t mĂ£ giáº£m giĂ¡'),
-          content: SizedBox(
-            width: 480,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: codeController,
-                    decoration: const InputDecoration(labelText: 'MĂ£ giáº£m giĂ¡'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'MĂ´ táº£'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: discountType,
-                    decoration: const InputDecoration(labelText: 'Loáº¡i giáº£m'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'percent',
-                        child: Text('Pháº§n trÄƒm'),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(coupon == null ? "New Coupon" : "Edit Coupon"),
+            content: SizedBox(
+              width: 400,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildField(controller: codeController, label: "Code"),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      controller: descController,
+                      label: "Description",
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<DiscountType>(
+                      value: type,
+                      decoration: const InputDecoration(
+                        labelText: "Discount Type",
+                        border: OutlineInputBorder(),
                       ),
-                      DropdownMenuItem(
-                        value: 'fixed',
-                        child: Text('Sá»‘ tiá»n cá»‘ Ä‘á»‹nh'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => discountType = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: discountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'GiĂ¡ trá»‹ giáº£m'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: minOrderController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'GiĂ¡ trá»‹ Ä‘Æ¡n tá»‘i thiá»ƒu'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: maxDiscountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Giáº£m tá»‘i Ä‘a'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: usageLimitController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Giá»›i háº¡n dĂ¹ng'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: DiscountType.percentage,
+                          child: Text("Percentage"),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: usedCountController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'ÄĂ£ dĂ¹ng'),
+                        DropdownMenuItem(
+                          value: DiscountType.flat,
+                          child: Text("Flat"),
                         ),
+                      ],
+                      onChanged: (v) => setState(() => type = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      controller: valueController,
+                      label: "Discount Value",
+                      isNumber: true,
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text(
+                        "Is Active",
+                        style: TextStyle(fontSize: 14),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await _pickDate(
-                              dialogContext,
-                              startDate ?? DateTime.now(),
-                            );
-                            if (picked != null) {
-                              setState(() => startDate = picked);
-                            }
-                          },
-                          icon: const Icon(Icons.event_rounded),
-                          label: Text('Báº¯t Ä‘áº§u: ${_formatDate(startDate)}'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await _pickDate(
-                              dialogContext,
-                              endDate ?? DateTime.now(),
-                            );
-                            if (picked != null) {
-                              setState(() => endDate = picked);
-                            }
-                          },
-                          icon: const Icon(Icons.event_available_rounded),
-                          label: Text('Káº¿t thĂºc: ${_formatDate(endDate)}'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: isActive,
-                    title: const Text('KĂ­ch hoáº¡t'),
-                    onChanged: (value) => setState(() => isActive = value),
-                  ),
-                ],
+                      value: isActive,
+                      activeColor: const Color(0xFF4318FF),
+
+                      onChanged: (v) => setState(() => isActive = v),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Há»§y'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final trimmedCode = codeController.text.trim().toUpperCase();
-                if (trimmedCode.isEmpty) {
-                  return;
-                }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4318FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  final newCoupon = CouponModel(
+                    id: coupon?.id ?? "",
+                    code: codeController.text,
+                    description: descController.text,
+                    discountType: type,
+                    discountValue: double.tryParse(valueController.text) ?? 0,
+                    startDate: DateTime.now(),
+                    endDate: DateTime.now().add(const Duration(days: 7)),
+                    usageLimit: 100,
+                    usageCount: coupon?.usageCount ?? 0,
+                    isActive: isActive,
+                    createdAt: coupon?.createdAt ?? DateTime.now(),
+                    updateAt: DateTime.now(),
+                  );
 
-                final model = CouponModel(
-                  id: coupon?.id ?? '',
-                  code: trimmedCode,
-                  description: descriptionController.text.trim(),
-                  discountType: discountType,
-                  discountValue:
-                      double.tryParse(discountController.text.trim()) ?? 0,
-                  minOrderValue:
-                      double.tryParse(minOrderController.text.trim()) ?? 0,
-                  maxDiscountValue:
-                      double.tryParse(maxDiscountController.text.trim()) ?? 0,
-                  usageLimit:
-                      int.tryParse(usageLimitController.text.trim()) ?? 0,
-                  usedCount: int.tryParse(usedCountController.text.trim()) ?? 0,
-                  isActive: isActive,
-                  startDate: startDate,
-                  endDate: endDate,
-                  createdAt: coupon?.createdAt ?? DateTime.now(),
-                  updatedAt: DateTime.now(),
-                );
+                  if (coupon == null)
+                    await controller.add(newCoupon);
+                  else
+                    await controller.update(newCoupon);
 
-                final controller = context.read<CouponController>();
-                if (coupon == null) {
-                  await controller.create(model);
-                } else {
-                  await controller.update(model);
-                }
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  "SAVE",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-                if (!dialogContext.mounted) {
-                  return;
-                }
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text(coupon == null ? 'ThĂªm' : 'LÆ°u'),
-            ),
-          ],
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    bool isNumber = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
         ),
       ),
     );
   }
-
-  Future<DateTime?> _pickDate(BuildContext context, DateTime initialDate) {
-    return showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-  }
-
-  String _formatDiscount(CouponModel coupon) {
-    if (coupon.discountType == 'percent') {
-      return '${_numberText(coupon.discountValue)}%';
-    }
-    return _formatMoney(coupon.discountValue);
-  }
-
-  String _formatMoney(double value) {
-    if (value <= 0) {
-      return '--';
-    }
-    return '${_numberText(value)}Ä‘';
-  }
-
-  String _numberText(double value) {
-    if (value == value.roundToDouble()) {
-      return value.toInt().toString();
-    }
-    return value.toStringAsFixed(2);
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) {
-      return '--';
-    }
-
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final year = value.year.toString();
-    return '$day/$month/$year';
-  }
 }
 
-class _CouponCodeCell extends StatelessWidget {
-  const _CouponCodeCell({required this.coupon});
+/// --- PHẦN TRANG TRÍ RIÊNG ---
 
-  final CouponModel coupon;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 260,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            coupon.code,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          Text(
-            coupon.description.isEmpty ? 'ChÆ°a cĂ³ mĂ´ táº£' : coupon.description,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label, required this.value});
-
+class _TableLabel extends StatelessWidget {
   final String label;
-  final String value;
+  const _TableLabel(this.label);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: const TextStyle(color: Color(0xFF64748B))),
-          const SizedBox(width: 8),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-        ],
+    return Text(
+      label,
+      style: const TextStyle(
+        color: Color(0xFFA3AED0),
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
       ),
     );
   }
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.active});
-
-  final bool active;
+  final bool isActive;
+  const _StatusBadge({required this.isActive});
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF2E7D32) : const Color(0xFFB71C1C);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        color: isActive
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        active ? 'Active' : 'Inactive',
-        style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        isActive ? "Active" : "Inactive",
+        style: TextStyle(
+          color: isActive ? Colors.green : Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
       ),
     );
   }
 }
 
-class _Pager extends StatelessWidget {
-  const _Pager({
-    required this.pageText,
-    required this.hasPreviousPage,
-    required this.hasNextPage,
-    required this.onPrevious,
-    required this.onNext,
-  });
+class _CircularActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
 
-  final String pageText;
-  final bool hasPreviousPage;
-  final bool hasNextPage;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  const _CircularActionButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(pageText, style: const TextStyle(color: Color(0xFF64748B))),
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: hasPreviousPage ? onPrevious : null,
-              child: const Text('TrÆ°á»›c'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.tonal(
-              onPressed: hasNextPage ? onNext : null,
-              child: const Text('Sau'),
-            ),
-          ],
-        ),
-      ],
+    return Material(
+      color: color.withOpacity(0.1),
+      shape: const CircleBorder(),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 20),
+        onPressed: onPressed,
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        padding: EdgeInsets.zero,
+      ),
     );
   }
 }
-

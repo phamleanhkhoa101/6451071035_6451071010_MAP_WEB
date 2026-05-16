@@ -1,54 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum DiscountType { percentage, flat }
+
 class CouponModel {
+  String id;
+  String code;
+  String description;
+  DiscountType discountType;
+  double discountValue;
+  DateTime? startDate;
+  DateTime? endDate;
+  int usageLimit;
+  int usageCount;
+  bool isActive;
+  DateTime? createdAt;
+  DateTime? updateAt;
+
   CouponModel({
     required this.id,
     required this.code,
     required this.description,
     required this.discountType,
     required this.discountValue,
-    required this.minOrderValue,
-    required this.maxDiscountValue,
-    required this.usageLimit,
-    required this.usedCount,
-    required this.isActive,
     this.startDate,
     this.endDate,
+    required this.usageLimit,
+    required this.usageCount,
+    required this.isActive,
     this.createdAt,
-    this.updatedAt,
+    this.updateAt,
   });
 
-  final String id;
-  final String code;
-  final String description;
-  final String discountType;
-  final double discountValue;
-  final double minOrderValue;
-  final double maxDiscountValue;
-  final int usageLimit;
-  final int usedCount;
-  final bool isActive;
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  factory CouponModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
-  factory CouponModel.fromMap(Map<String, dynamic> map, String id) {
     return CouponModel(
-      id: id,
-      code: map['code'] ?? '',
-      description: map['description'] ?? '',
-      discountType: map['discountType'] ?? 'percent',
-      discountValue: _toDouble(map['discountValue']),
-      minOrderValue: _toDouble(map['minOrderValue']),
-      maxDiscountValue: _toDouble(map['maxDiscountValue']),
-      usageLimit: _toInt(map['usageLimit']),
-      usedCount: _toInt(map['usedCount']),
-      isActive: map['isActive'] ?? true,
-      startDate: (map['startDate'] as Timestamp?)?.toDate(),
-      endDate: (map['endDate'] as Timestamp?)?.toDate(),
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+      id: doc.id,
+      code: data['code'] ?? '',
+      description: data['description'] ?? '',
+      discountType: data['discountType'] == 'flat'
+          ? DiscountType.flat
+          : DiscountType.percentage,
+      discountValue: (data['discountValue'] ?? 0).toDouble(),
+      startDate: (data['startDate'] as Timestamp?)?.toDate(),
+      endDate: (data['endDate'] as Timestamp?)?.toDate(),
+      usageLimit: data['usageLimit'] ?? 0,
+      usageCount: data['usageCount'] ?? 0,
+      isActive: data['isActive'] ?? true,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      updateAt: (data['updateAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -56,33 +56,15 @@ class CouponModel {
     return {
       'code': code,
       'description': description,
-      'discountType': discountType,
+      'discountType': discountType == DiscountType.flat ? 'flat' : 'percentage',
       'discountValue': discountValue,
-      'minOrderValue': minOrderValue,
-      'maxDiscountValue': maxDiscountValue,
+      'startDate': startDate,
+      'endDate': endDate,
       'usageLimit': usageLimit,
-      'usedCount': usedCount,
+      'usageCount': usageCount,
       'isActive': isActive,
-      'startDate': startDate == null ? null : Timestamp.fromDate(startDate!),
-      'endDate': endDate == null ? null : Timestamp.fromDate(endDate!),
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': createdAt,
+      'updateAt': updateAt,
     };
-  }
-
-  static double _toDouble(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is num) {
-      return value.toInt();
-    }
-    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }
